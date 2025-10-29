@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import 'package:winter_arc/models/exercise.dart';
 import 'package:winter_arc/models/workout_log.dart';
-import 'package:winter_arc/models/workout_set.dart';
-import 'package:winter_arc/services/storage_service.dart';
+import 'package:winter_arc/providers/user_provider.dart';
+import 'package:winter_arc/providers/workout_provider.dart';
+import 'package:winter_arc/widgets/exercise_selector.dart';
+import 'package:winter_arc/widgets/add_set_dialog.dart';
+import 'package:winter_arc/widgets/exercise_card.dart';
 
 class LogWorkoutScreen extends StatefulWidget {
   const LogWorkoutScreen({super.key});
@@ -13,7 +16,6 @@ class LogWorkoutScreen extends StatefulWidget {
 }
 
 class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
-  final _storageService = StorageService();
   final List<ExerciseLog> _exerciseLogs = [];
   final _notesController = TextEditingController();
   bool _isSaving = false;
@@ -31,7 +33,7 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _ExerciseSelector(
+      builder: (context) => ExerciseSelector(
         onExerciseSelected: (exercise) {
           setState(() {
             _exerciseLogs.add(ExerciseLog(
@@ -47,7 +49,7 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
   void _addSetToExercise(int exerciseIndex) {
     showDialog(
       context: context,
-      builder: (context) => _AddSetDialog(
+      builder: (context) => AddSetDialog(
         exerciseName: _exerciseLogs[exerciseIndex].exercise.name,
         onSetAdded: (set) {
           setState(() {
@@ -84,12 +86,12 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final user = await _storageService.getCurrentUser();
-      final userId = user?.id ?? 'default_user';
+      final userProvider = context.read<UserProvider>();
+      final workoutProvider = context.read<WorkoutProvider>();
 
       final workout = WorkoutLog(
         id: const Uuid().v4(),
-        userId: userId,
+        userId: userProvider.userId,
         date: DateTime.now(),
         exercises: _exerciseLogs,
         notes: _notesController.text.trim().isEmpty 
@@ -97,7 +99,7 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
             : _notesController.text.trim(),
       );
 
-      await _storageService.saveWorkoutLog(workout);
+      await workoutProvider.addWorkout(workout);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -204,7 +206,13 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
             padding: const EdgeInsets.all(16),
             itemCount: _exerciseLogs.length,
             itemBuilder: (context, index) {
-              return _buildExerciseCard(index);
+              return ExerciseCard(
+                exerciseLog: _exerciseLogs[index],
+                index: index,
+                onRemove: () => _removeExercise(index),
+                onAddSet: () => _addSetToExercise(index),
+                onRemoveSet: (setIndex) => _removeSet(index, setIndex),
+              );
             },
           ),
         ),
@@ -282,286 +290,6 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildExerciseCard(int index) {
-    final exerciseLog = _exerciseLogs[index];
-    final exercise = exerciseLog.exercise;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        children: [
-          // Exercise header
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: Text(
-                exercise.name[0],
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            title: Text(
-              exercise.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text('${exerciseLog.totalReps} total reps'),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _removeExercise(index),
-              color: Colors.red,
-            ),
-          ),
-
-          // Sets list
-          if (exerciseLog.sets.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: List.generate(
-                  exerciseLog.sets.length,
-                  (setIndex) => _buildSetRow(index, setIndex),
-                ),
-              ),
-            ),
-
-          // Add set button
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextButton.icon(
-              onPressed: () => _addSetToExercise(index),
-              icon: const Icon(Icons.add_circle_outline),
-              label: const Text('Add Set'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSetRow(int exerciseIndex, int setIndex) {
-    final set = _exerciseLogs[exerciseIndex].sets[setIndex];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              '${setIndex + 1}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '${set.reps} reps',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
-          if (set.duration != null)
-            Text(
-              '${set.duration}s',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 20),
-            onPressed: () => _removeSet(exerciseIndex, setIndex),
-            color: Colors.grey,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Exercise Selector Bottom Sheet
-class _ExerciseSelector extends StatelessWidget {
-  final Function(Exercise) onExerciseSelected;
-
-  const _ExerciseSelector({required this.onExerciseSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    final exercises = Exercise.defaultExercises;
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Select Exercise',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: exercises.length,
-                itemBuilder: (context, index) {
-                  final exercise = exercises[index];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: Text(
-                        exercise.name[0],
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    title: Text(exercise.name),
-                    subtitle: Text(exercise.description ?? ''),
-                    trailing: const Icon(Icons.add_circle_outline),
-                    onTap: () {
-                      onExerciseSelected(exercise);
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// Add Set Dialog
-class _AddSetDialog extends StatefulWidget {
-  final String exerciseName;
-  final Function(WorkoutSet) onSetAdded;
-
-  const _AddSetDialog({
-    required this.exerciseName,
-    required this.onSetAdded,
-  });
-
-  @override
-  State<_AddSetDialog> createState() => _AddSetDialogState();
-}
-
-class _AddSetDialogState extends State<_AddSetDialog> {
-  final _repsController = TextEditingController();
-  final _durationController = TextEditingController();
-  final _notesController = TextEditingController();
-
-  @override
-  void dispose() {
-    _repsController.dispose();
-    _durationController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  void _addSet() {
-    final reps = int.tryParse(_repsController.text);
-    if (reps == null || reps <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter valid reps'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    final duration = _durationController.text.isEmpty
-        ? null
-        : int.tryParse(_durationController.text);
-
-    final set = WorkoutSet(
-      reps: reps,
-      duration: duration,
-      notes: _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim(),
-    );
-
-    widget.onSetAdded(set);
-    Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Add Set - ${widget.exerciseName}'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _repsController,
-              decoration: const InputDecoration(
-                labelText: 'Reps *',
-                hintText: 'Enter number of reps',
-                prefixIcon: Icon(Icons.repeat),
-              ),
-              keyboardType: TextInputType.number,
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _durationController,
-              decoration: const InputDecoration(
-                labelText: 'Duration (seconds)',
-                hintText: 'Optional',
-                prefixIcon: Icon(Icons.timer),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                hintText: 'Optional',
-                prefixIcon: Icon(Icons.note),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _addSet,
-          child: const Text('Add Set'),
         ),
       ],
     );

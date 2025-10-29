@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:winter_arc/utils/constants.dart';
-import 'package:winter_arc/services/storage_service.dart';
-import 'package:winter_arc/models/workout_log.dart';
-import 'package:winter_arc/models/user.dart';
+import 'package:winter_arc/providers/user_provider.dart';
+import 'package:winter_arc/providers/workout_provider.dart';
+import 'package:winter_arc/widgets/stat_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,57 +13,26 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _storageService = StorageService();
-  bool _isLoading = true;
-  List<WorkoutLog> _todayWorkouts = [];
-  int _streak = 0;
-  int _totalWorkouts = 0;
-
   @override
   void initState() {
     super.initState();
-    _loadData();
+    // Load workouts when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final user = await _storageService.getCurrentUser();
-      final userId = user?.id ?? 'default_user';
-
-      // If no user exists, create a default one
-      if (user == null) {
-        await _storageService.saveCurrentUser(
-          User(
-            id: userId,
-            name: 'Winter Warrior',
-            joinedDate: DateTime.now(),
-          ),
-        );
-      }
-
-      final today = await _storageService.getTodayWorkouts(userId);
-      final streak = await _storageService.getWorkoutStreak(userId);
-      final total = await _storageService.getTotalWorkoutsInWinterArc(userId);
-
-      setState(() {
-        _todayWorkouts = today;
-        _streak = streak;
-        _totalWorkouts = total;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading data: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    final userProvider = context.read<UserProvider>();
+    final workoutProvider = context.read<WorkoutProvider>();
+    
+    // Ensure user is loaded first
+    if (userProvider.currentUser == null) {
+      await userProvider.loadUser();
     }
+    
+    // Then load workouts
+    await workoutProvider.loadWorkouts(userProvider.userId);
   }
 
   @override
@@ -71,24 +41,30 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadData,
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildWinterArcTimer(context),
-                      const SizedBox(height: 24),
-                      _buildTodaySummary(context),
-                      const SizedBox(height: 24),
-                      _buildWinterArcStats(context),
-                      const SizedBox(height: 24),
-                      _buildQuickActions(context),
-                    ],
-                  ),
+          child: Consumer2<UserProvider, WorkoutProvider>(
+            builder: (context, userProvider, workoutProvider, child) {
+              if (userProvider.isLoading || workoutProvider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildWinterArcTimer(context),
+                    const SizedBox(height: 24),
+                    _buildTodaySummary(context, workoutProvider),
+                    const SizedBox(height: 24),
+                    _buildWinterArcStats(context, workoutProvider),
+                    const SizedBox(height: 24),
+                    _buildQuickActions(context),
+                  ],
                 ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -162,15 +138,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTodaySummary(BuildContext context) {
-    final totalReps = _todayWorkouts.fold<int>(
-      0,
-      (sum, workout) => sum + workout.totalReps,
-    );
-    final totalSets = _todayWorkouts.fold<int>(
-      0,
-      (sum, workout) => sum + workout.totalSets,
-    );
+  Widget _buildTodaySummary(BuildContext context, WorkoutProvider workoutProvider) {
+    final todayWorkouts = workoutProvider.todayWorkouts;
+    final totalReps = workoutProvider.todayTotalReps;
+    final totalSets = workoutProvider.todayTotalSets;
+    final streak = workoutProvider.streak;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Today\'s Summary',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            if (_todayWorkouts.isNotEmpty)
+            if (todayWorkouts.isNotEmpty)
               Icon(
                 Icons.check_circle,
                 color: Theme.of(context).colorScheme.primary,
@@ -193,20 +165,18 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard(
-                context,
-                'Workouts',
-                '${_todayWorkouts.length}',
-                Icons.fitness_center,
+              child: StatCard(
+                label: 'Workouts',
+                value: '${todayWorkouts.length}',
+                icon: Icons.fitness_center,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard(
-                context,
-                'Total Reps',
-                '$totalReps',
-                Icons.repeat,
+              child: StatCard(
+                label: 'Total Reps',
+                value: '$totalReps',
+                icon: Icons.repeat,
               ),
             ),
           ],
@@ -215,21 +185,19 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard(
-                context,
-                'Streak',
-                '$_streak days',
-                Icons.local_fire_department,
-                color: _streak > 0 ? Colors.orange : null,
+              child: StatCard(
+                label: 'Streak',
+                value: '$streak days',
+                icon: Icons.local_fire_department,
+                color: streak > 0 ? Colors.orange : null,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard(
-                context,
-                'Sets',
-                '$totalSets',
-                Icons.format_list_numbered,
+              child: StatCard(
+                label: 'Sets',
+                value: '$totalSets',
+                icon: Icons.format_list_numbered,
               ),
             ),
           ],
@@ -238,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildWinterArcStats(BuildContext context) {
+  Widget _buildWinterArcStats(BuildContext context, WorkoutProvider workoutProvider) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -258,48 +226,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 Text(
-                  '$_totalWorkouts',
+                  '${workoutProvider.totalWinterArcWorkouts}',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
                 ),
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon, {
-    Color? color,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 32,
-              color: color ?? Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontSize: 20,
-                  ),
-            ),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -320,8 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () {
-              // The navigation is handled by the bottom nav bar
-              // Just show a message
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Tap the "Log" tab to add a workout'),
