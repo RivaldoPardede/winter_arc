@@ -1,7 +1,7 @@
 class AppConstants {
   // Winter Arc Period
-  static final DateTime winterArcStart = DateTime(2024, 11, 1);
-  static final DateTime winterArcEnd = DateTime(2025, 2, 28);
+  static final DateTime winterArcStart = DateTime(2025, 11, 1);
+  static final DateTime winterArcEnd = DateTime(2026, 2, 28);
 
   // App Info
   static const String appName = 'Winter Arc';

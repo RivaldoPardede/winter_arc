@@ -35,13 +35,20 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  final GlobalKey<NavigatorState> _homeNavigatorKey = GlobalKey<NavigatorState>();
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    LogWorkoutScreen(),
-    ProgressScreen(),
-    GroupScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      HomeScreen(key: _homeNavigatorKey),
+      const LogWorkoutScreen(),
+      const ProgressScreen(),
+      const GroupScreen(),
+    ];
+  }
 
   final List<NavigationDestination> _destinations = const [
     NavigationDestination(
@@ -80,7 +87,10 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (int index) {
