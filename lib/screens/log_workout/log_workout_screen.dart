@@ -30,6 +30,7 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: false, // Use local navigator
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -49,6 +50,7 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
   void _addSetToExercise(int exerciseIndex) {
     showDialog(
       context: context,
+      useRootNavigator: false, // Use local navigator
       builder: (context) => AddSetDialog(
         exerciseName: _exerciseLogs[exerciseIndex].exercise.name,
         onSetAdded: (set) {

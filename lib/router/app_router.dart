@@ -7,41 +7,47 @@ import 'package:winter_arc/screens/group/group_screen.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
-  static final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/home',
     routes: [
-      ShellRoute(
-        navigatorKey: _shellNavigatorKey,
-        builder: (context, state, child) {
-          return ScaffoldWithNavBar(child: child);
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return ScaffoldWithNavBar(navigationShell: navigationShell);
         },
-        routes: [
-          GoRoute(
-            path: '/home',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: HomeScreen(),
-            ),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/log',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: LogWorkoutScreen(),
-            ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/log',
+                builder: (context, state) => const LogWorkoutScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/progress',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: ProgressScreen(),
-            ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/progress',
+                builder: (context, state) => const ProgressScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/group',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: GroupScreen(),
-            ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/group',
+                builder: (context, state) => const GroupScreen(),
+              ),
+            ],
           ),
         ],
       ),
@@ -50,43 +56,31 @@ class AppRouter {
 }
 
 class ScaffoldWithNavBar extends StatelessWidget {
-  final Widget child;
+  final StatefulNavigationShell navigationShell;
 
   const ScaffoldWithNavBar({
     super.key,
-    required this.child,
+    required this.navigationShell,
   });
 
-  int _calculateSelectedIndex(BuildContext context) {
-    final String location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/home')) return 0;
-    if (location.startsWith('/log')) return 1;
-    if (location.startsWith('/progress')) return 2;
-    if (location.startsWith('/group')) return 3;
-    return 0;
-  }
-
   void _onItemTapped(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go('/home');
-        break;
-      case 1:
-        context.go('/log');
-        break;
-      case 2:
-        context.go('/progress');
-        break;
-      case 3:
-        context.go('/group');
-        break;
+    // If switching to a different tab, close any open modals/dialogs
+    if (index != navigationShell.currentIndex) {
+      // Try to pop any route that's on top (modals, dialogs, bottom sheets)
+      final navigator = Navigator.of(context);
+      while (navigator.canPop()) {
+        navigator.pop();
+      }
     }
+    
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = _calculateSelectedIndex(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Winter Arc'),
@@ -99,9 +93,9 @@ class ScaffoldWithNavBar extends StatelessWidget {
           ),
         ],
       ),
-      body: child,
+      body: navigationShell,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
+        selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) => _onItemTapped(context, index),
         destinations: const [
           NavigationDestination(
