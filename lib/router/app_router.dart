@@ -1,17 +1,46 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:winter_arc/screens/auth/login_screen.dart';
 import 'package:winter_arc/screens/home/home_screen.dart';
 import 'package:winter_arc/screens/log_workout/log_workout_screen.dart';
 import 'package:winter_arc/screens/progress/progress_screen.dart';
 import 'package:winter_arc/screens/group/group_screen.dart';
+import 'package:winter_arc/services/auth_service.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
+  static final _authService = AuthService();
 
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/home',
+    redirect: (context, state) {
+      final isLoggedIn = _authService.isLoggedIn;
+      final isLoginRoute = state.matchedLocation == '/login';
+
+      // If not logged in and not already on login page, redirect to login
+      if (!isLoggedIn && !isLoginRoute) {
+        return '/login';
+      }
+
+      // If logged in and on login page, redirect to home
+      if (isLoggedIn && isLoginRoute) {
+        return '/home';
+      }
+
+      // No redirect needed
+      return null;
+    },
+    refreshListenable: GoRouterRefreshStream(_authService.authStateChanges),
     routes: [
+      // Login Route (no bottom nav)
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+
+      // Main App Routes (with bottom nav)
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return ScaffoldWithNavBar(navigationShell: navigationShell);
@@ -54,6 +83,25 @@ class AppRouter {
     ],
   );
 }
+
+// Helper class to make GoRouter respond to auth state changes
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+          (dynamic _) => notifyListeners(),
+        );
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
 
 class ScaffoldWithNavBar extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
