@@ -1,6 +1,7 @@
 class AppConstants {
   // Winter Arc Period
-  static final DateTime winterArcStart = DateTime(2025, 11, 1);
+  // TODO: Change back to Nov 1 before production release!
+  static final DateTime winterArcStart = DateTime(2025, 10, 30); // Temporarily Oct 30 for testing
   static final DateTime winterArcEnd = DateTime(2026, 2, 28);
 
   // App Info
