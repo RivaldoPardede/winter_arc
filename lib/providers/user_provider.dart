@@ -18,6 +18,9 @@ class UserProvider extends ChangeNotifier {
   
   // Check if user is authenticated
   bool get isAuthenticated => _authService.isLoggedIn;
+  
+  // Check if user has a profile (for welcome screen redirect)
+  bool get hasProfile => _currentUser != null;
 
   Future<void> loadUser() async {
     if (!_authService.isLoggedIn) {
@@ -33,17 +36,30 @@ class UserProvider extends ChangeNotifier {
       final userId = _authService.currentUserId!;
       _currentUser = await _firestoreService.getUser(userId);
       
-      // Create user profile if doesn't exist
-      if (_currentUser == null) {
-        _currentUser = User(
-          id: userId,
-          name: _authService.getUserDisplayName(),
-          joinedDate: DateTime.now(),
-        );
-        await _firestoreService.saveUser(_currentUser!);
-      }
+      // Don't auto-create profile - let welcome screen handle it
+      // This allows us to detect first-time users
     } catch (e) {
       debugPrint('Error loading user: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Create user profile (called from welcome screen)
+  Future<void> createUserProfile(User user) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _firestoreService.saveUser(user);
+      _currentUser = user;
+      
+      // Also set display name in Firebase Auth
+      await _authService.updateDisplayName(user.name);
+    } catch (e) {
+      debugPrint('Error creating user profile: $e');
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();

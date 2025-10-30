@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:winter_arc/screens/auth/login_screen.dart';
+import 'package:winter_arc/screens/auth/welcome_screen.dart';
 import 'package:winter_arc/screens/home/home_screen.dart';
 import 'package:winter_arc/screens/log_workout/log_workout_screen.dart';
 import 'package:winter_arc/screens/progress/progress_screen.dart';
@@ -14,32 +15,48 @@ class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
   static final _authService = AuthService();
 
-  static final GoRouter router = GoRouter(
-    navigatorKey: _rootNavigatorKey,
-    initialLocation: '/home',
-    redirect: (context, state) {
-      final isLoggedIn = _authService.isLoggedIn;
-      final isLoginRoute = state.matchedLocation == '/login';
+  static GoRouter createRouter(UserProvider userProvider) {
+    return GoRouter(
+      navigatorKey: _rootNavigatorKey,
+      initialLocation: '/home',
+      redirect: (context, state) {
+        final isLoggedIn = _authService.isLoggedIn;
+        final isLoginRoute = state.matchedLocation == '/login';
+        final isWelcomeRoute = state.matchedLocation == '/welcome';
 
-      // If not logged in and not already on login page, redirect to login
-      if (!isLoggedIn && !isLoginRoute) {
-        return '/login';
-      }
+        // If not logged in and not already on login page, redirect to login
+        if (!isLoggedIn && !isLoginRoute) {
+          return '/login';
+        }
 
-      // If logged in and on login page, redirect to home
-      if (isLoggedIn && isLoginRoute) {
-        return '/home';
-      }
+        // If logged in but no profile and not on welcome screen, redirect to welcome
+        if (isLoggedIn && !userProvider.hasProfile && !isWelcomeRoute && !isLoginRoute) {
+          return '/welcome';
+        }
 
-      // No redirect needed
-      return null;
-    },
-    refreshListenable: GoRouterRefreshStream(_authService.authStateChanges),
+        // If logged in, has profile, and on login/welcome page, redirect to home
+        if (isLoggedIn && userProvider.hasProfile && (isLoginRoute || isWelcomeRoute)) {
+          return '/home';
+        }
+
+        // No redirect needed
+        return null;
+      },
+      refreshListenable: Listenable.merge([
+        GoRouterRefreshStream(_authService.authStateChanges),
+        userProvider, // Also listen to UserProvider changes
+      ]),
     routes: [
       // Login Route (no bottom nav)
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+
+      // Welcome Route (first-time setup)
+      GoRoute(
+        path: '/welcome',
+        builder: (context, state) => const WelcomeScreen(),
       ),
 
       // Main App Routes (with bottom nav)
@@ -83,7 +100,8 @@ class AppRouter {
         ],
       ),
     ],
-  );
+    );
+  }
 }
 
 // Helper class to make GoRouter respond to auth state changes
