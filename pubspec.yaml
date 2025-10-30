@@ -49,6 +49,7 @@ dependencies:
   
   # Date formatting
   intl: ^0.20.2
+  firebase_core: ^4.2.0
 
 dev_dependencies:
   flutter_test:
