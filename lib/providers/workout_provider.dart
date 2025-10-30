@@ -1,15 +1,19 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:winter_arc/models/workout_log.dart';
-import 'package:winter_arc/services/storage_service.dart';
+import 'package:winter_arc/services/firestore_service.dart';
 
 class WorkoutProvider extends ChangeNotifier {
-  final StorageService _storageService = StorageService();
+  final FirestoreService _firestoreService = FirestoreService();
   
   List<WorkoutLog> _allWorkouts = [];
   List<WorkoutLog> _todayWorkouts = [];
   int _streak = 0;
   int _totalWinterArcWorkouts = 0;
   bool _isLoading = false;
+
+  StreamSubscription<List<WorkoutLog>>? _workoutsSubscription;
+  String? _currentUserId;
 
   List<WorkoutLog> get allWorkouts => _allWorkouts;
   List<WorkoutLog> get todayWorkouts => _todayWorkouts;
@@ -26,18 +30,50 @@ class WorkoutProvider extends ChangeNotifier {
     return _todayWorkouts.fold<int>(0, (sum, workout) => sum + workout.totalSets);
   }
 
+  /// Start listening to real-time workout updates
   Future<void> loadWorkouts(String userId) async {
+    if (_currentUserId == userId && _workoutsSubscription != null) {
+      // Already listening to this user's workouts
+      return;
+    }
+
     _isLoading = true;
+    _currentUserId = userId;
     notifyListeners();
 
+    // Cancel previous subscription if exists
+    await _workoutsSubscription?.cancel();
+
     try {
-      _allWorkouts = await _storageService.getWorkoutLogs(userId);
-      _todayWorkouts = await _storageService.getTodayWorkouts(userId);
-      _streak = await _storageService.getWorkoutStreak(userId);
-      _totalWinterArcWorkouts = await _storageService.getTotalWorkoutsInWinterArc(userId);
+      // Subscribe to real-time updates
+      _workoutsSubscription = _firestoreService.workoutsStream(userId).listen(
+        (workouts) async {
+          _allWorkouts = workouts;
+          
+          // Calculate today's workouts
+          final now = DateTime.now();
+          _todayWorkouts = workouts.where((workout) {
+            return workout.date.year == now.year &&
+                workout.date.month == now.month &&
+                workout.date.day == now.day;
+          }).toList();
+
+          // Calculate streak and winter arc stats
+          _streak = await _firestoreService.getWorkoutStreak(userId);
+          _totalWinterArcWorkouts =
+              await _firestoreService.getTotalWorkoutsInWinterArc(userId);
+
+          _isLoading = false;
+          notifyListeners();
+        },
+        onError: (error) {
+          debugPrint('Error in workouts stream: $error');
+          _isLoading = false;
+          notifyListeners();
+        },
+      );
     } catch (e) {
       debugPrint('Error loading workouts: $e');
-    } finally {
       _isLoading = false;
       notifyListeners();
     }
@@ -45,10 +81,8 @@ class WorkoutProvider extends ChangeNotifier {
 
   Future<void> addWorkout(WorkoutLog workout) async {
     try {
-      await _storageService.saveWorkoutLog(workout);
-      
-      // Reload all data
-      await loadWorkouts(workout.userId);
+      await _firestoreService.saveWorkoutLog(workout);
+      // Real-time listener will automatically update the UI
     } catch (e) {
       debugPrint('Error adding workout: $e');
       rethrow;
@@ -57,10 +91,8 @@ class WorkoutProvider extends ChangeNotifier {
 
   Future<void> updateWorkout(WorkoutLog workout) async {
     try {
-      await _storageService.updateWorkoutLog(workout);
-      
-      // Reload all data
-      await loadWorkouts(workout.userId);
+      await _firestoreService.updateWorkoutLog(workout);
+      // Real-time listener will automatically update the UI
     } catch (e) {
       debugPrint('Error updating workout: $e');
       rethrow;
@@ -69,10 +101,8 @@ class WorkoutProvider extends ChangeNotifier {
 
   Future<void> deleteWorkout(String logId, String userId) async {
     try {
-      await _storageService.deleteWorkoutLog(logId, userId);
-      
-      // Reload all data
-      await loadWorkouts(userId);
+      await _firestoreService.deleteWorkoutLog(logId);
+      // Real-time listener will automatically update the UI
     } catch (e) {
       debugPrint('Error deleting workout: $e');
       rethrow;
@@ -80,7 +110,27 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   Future<void> refresh(String userId) async {
-    await loadWorkouts(userId);
+    // With real-time listeners, manual refresh is not needed
+    // But we can recalculate stats if needed
+    if (_currentUserId == userId) {
+      _streak = await _firestoreService.getWorkoutStreak(userId);
+      _totalWinterArcWorkouts =
+          await _firestoreService.getTotalWorkoutsInWinterArc(userId);
+      notifyListeners();
+    }
+  }
+
+  /// Stop listening to real-time updates
+  void stopListening() {
+    _workoutsSubscription?.cancel();
+    _workoutsSubscription = null;
+    _currentUserId = null;
+  }
+
+  @override
+  void dispose() {
+    _workoutsSubscription?.cancel();
+    super.dispose();
   }
 
   // Get workouts for a specific date range

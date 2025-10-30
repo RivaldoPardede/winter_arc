@@ -1,17 +1,22 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:winter_arc/models/group_member.dart';
-import 'package:winter_arc/models/user.dart';
 import 'package:winter_arc/models/workout_log.dart';
-import 'package:winter_arc/models/exercise.dart';
-import 'package:winter_arc/models/workout_set.dart';
-import 'package:uuid/uuid.dart';
+import 'package:winter_arc/services/firestore_service.dart';
 
 class GroupProvider extends ChangeNotifier {
+  final FirestoreService _firestoreService = FirestoreService();
+  
   final List<GroupMember> _members = [];
   bool _isLoading = false;
+  
+  StreamSubscription<List<WorkoutLog>>? _groupWorkoutsSubscription;
+  StreamSubscription<List<String>>? _groupMembersSubscription;
+  String? _groupId;
 
   List<GroupMember> get members => _members;
   bool get isLoading => _isLoading;
+  String? get groupId => _groupId;
 
   // Get all group workouts sorted by date
   List<WorkoutLog> get allGroupWorkouts {
@@ -120,221 +125,106 @@ class GroupProvider extends ChangeNotifier {
 
   // Load mock data
   Future<void> loadMockData(String currentUserId) async {
+    // For now, we'll use a hardcoded group ID
+    // In production, you'd fetch this from user's profile or group management
+    const groupId = 'winter-arc-squad-2025';
+    await loadGroupData(groupId, currentUserId);
+  }
+
+  /// Load real group data from Firestore with real-time sync
+  Future<void> loadGroupData(String groupId, String currentUserId) async {
     _isLoading = true;
+    _groupId = groupId;
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Cancel previous subscriptions
+    await _groupWorkoutsSubscription?.cancel();
+    await _groupMembersSubscription?.cancel();
 
-    _members.clear();
+    try {
+      // For MVP: Use hardcoded member IDs (you + 3 friends)
+      // In production: Fetch from groups/{groupId}/memberIds
+      final memberIds = await _getGroupMemberIds(groupId, currentUserId);
 
-    // Create 4 mock members with diverse data
-    final mockMembers = _generateMockMembers(currentUserId);
-    _members.addAll(mockMembers);
+      // Load member profiles
+      final users = await _firestoreService.getUsersByIds(memberIds);
 
-    _isLoading = false;
-    notifyListeners();
-  }
+      // Subscribe to all members' workouts in real-time
+      _groupWorkoutsSubscription = _firestoreService
+          .groupWorkoutsStream(memberIds)
+          .listen((allWorkouts) async {
+        // Group workouts by user ID
+        final workoutsByUser = <String, List<WorkoutLog>>{};
+        for (var workout in allWorkouts) {
+          workoutsByUser.putIfAbsent(workout.userId, () => []).add(workout);
+        }
 
-  List<GroupMember> _generateMockMembers(String currentUserId) {
-    final now = DateTime.now();
+        // Build group members with their workouts
+        _members.clear();
+        for (var user in users) {
+          final userWorkouts = workoutsByUser[user.id] ?? [];
+          
+          // Calculate stats
+          final streak = await _firestoreService.getWorkoutStreak(user.id);
+          final winterArcWorkouts =
+              await _firestoreService.getTotalWorkoutsInWinterArc(user.id);
 
-    // Member 1: You (Current user) - Will be replaced with real data
-    final member1 = GroupMember(
-      user: User(
-        id: currentUserId,
-        name: 'You',
-        joinedDate: DateTime(2025, 10, 25),
-      ),
-      workouts: [], // Will show real workouts
-      currentStreak: 0,
-      totalWinterArcWorkouts: 0,
-      avatarEmoji: '💪',
-    );
+          // Get avatar emoji (for MVP, assign based on user ID)
+          final avatarEmoji = _getAvatarEmoji(user.id, currentUserId);
 
-    // Member 2: Alex - The Consistent One
-    final member2Workouts = <WorkoutLog>[
-      _createMockWorkout(
-        'user-alex',
-        now.subtract(const Duration(days: 0)),
-        ['Pull-ups', 'Push-ups'],
-        [[12, 10, 8], [20, 18, 15]],
-      ),
-      _createMockWorkout(
-        'user-alex',
-        now.subtract(const Duration(days: 1)),
-        ['Dips', 'Squats'],
-        [[15, 12, 10], [25, 20, 20]],
-      ),
-      _createMockWorkout(
-        'user-alex',
-        now.subtract(const Duration(days: 2)),
-        ['Pull-ups', 'Handstand Push-ups'],
-        [[10, 9, 8], [12, 10, 10]],
-      ),
-      _createMockWorkout(
-        'user-alex',
-        now.subtract(const Duration(days: 3)),
-        ['Push-ups', 'Squats', 'Plank'],
-        [[25, 22, 20], [30, 28, 25], [60, 50, 45]],
-      ),
-      _createMockWorkout(
-        'user-alex',
-        now.subtract(const Duration(days: 5)),
-        ['Pull-ups', 'Dips'],
-        [[11, 10, 9], [14, 13, 12]],
-      ),
-    ];
+          _members.add(GroupMember(
+            user: user,
+            workouts: userWorkouts,
+            currentStreak: streak,
+            totalWinterArcWorkouts: winterArcWorkouts,
+            avatarEmoji: avatarEmoji,
+          ));
+        }
 
-    final member2 = GroupMember(
-      user: User(
-        id: 'user-alex',
-        name: 'Alex',
-        joinedDate: DateTime(2025, 10, 20),
-      ),
-      workouts: member2Workouts,
-      currentStreak: 4,
-      totalWinterArcWorkouts: 5,
-      avatarEmoji: '🔥',
-    );
-
-    // Member 3: Jamie - The Power Lifter
-    final member3Workouts = <WorkoutLog>[
-      _createMockWorkout(
-        'user-jamie',
-        now.subtract(const Duration(days: 1)),
-        ['Pull-ups', 'Dips', 'L-Sit'],
-        [[15, 14, 13], [18, 16, 15], [30, 25, 20]],
-      ),
-      _createMockWorkout(
-        'user-jamie',
-        now.subtract(const Duration(days: 3)),
-        ['Push-ups', 'Pistol Squats'],
-        [[30, 28, 25], [10, 9, 8]],
-      ),
-      _createMockWorkout(
-        'user-jamie',
-        now.subtract(const Duration(days: 4)),
-        ['Muscle-ups', 'Plank'],
-        [[5, 4, 3], [80, 70, 60]],
-      ),
-    ];
-
-    final member3 = GroupMember(
-      user: User(
-        id: 'user-jamie',
-        name: 'Jamie',
-        joinedDate: DateTime(2025, 10, 22),
-      ),
-      workouts: member3Workouts,
-      currentStreak: 2,
-      totalWinterArcWorkouts: 3,
-      avatarEmoji: '⚡',
-    );
-
-    // Member 4: Sam - The Beginner
-    final member4Workouts = <WorkoutLog>[
-      _createMockWorkout(
-        'user-sam',
-        now.subtract(const Duration(days: 0)),
-        ['Push-ups', 'Squats'],
-        [[10, 8, 7], [15, 12, 10]],
-      ),
-      _createMockWorkout(
-        'user-sam',
-        now.subtract(const Duration(days: 2)),
-        ['Push-ups', 'Pull-ups'],
-        [[15, 12, 10], [5, 4, 3]],
-      ),
-    ];
-
-    final member4 = GroupMember(
-      user: User(
-        id: 'user-sam',
-        name: 'Sam',
-        joinedDate: DateTime(2025, 10, 28),
-      ),
-      workouts: member4Workouts,
-      currentStreak: 1,
-      totalWinterArcWorkouts: 2,
-      avatarEmoji: '🌟',
-    );
-
-    return [member1, member2, member3, member4];
-  }
-
-  WorkoutLog _createMockWorkout(
-    String userId,
-    DateTime date,
-    List<String> exerciseNames,
-    List<List<int>> repsList,
-  ) {
-    const uuid = Uuid();
-    final exerciseLogs = <ExerciseLog>[];
-
-    // Map of exercise names to their types
-    final exerciseMap = {
-      'Push-ups': ExerciseType.pushUps,
-      'Pull-ups': ExerciseType.pullUps,
-      'Squats': ExerciseType.squats,
-      'Dips': ExerciseType.dips,
-      'Lunges': ExerciseType.lunges,
-      'Plank': ExerciseType.plank,
-      'Handstand Push-ups': ExerciseType.handstandPushUps,
-      'Muscle-ups': ExerciseType.muscleUps,
-      'Pistol Squats': ExerciseType.pistolSquats,
-      'L-Sit': ExerciseType.lSit,
-    };
-
-    for (int i = 0; i < exerciseNames.length; i++) {
-      final sets = repsList[i].map((reps) {
-        return WorkoutSet(reps: reps);
-      }).toList();
-
-      final exerciseName = exerciseNames[i];
-      final exerciseType = exerciseMap[exerciseName] ?? ExerciseType.other;
-
-      final exercise = Exercise(
-        id: uuid.v4(),
-        type: exerciseType,
-        name: exerciseName,
-      );
-
-      exerciseLogs.add(ExerciseLog(
-        exercise: exercise,
-        sets: sets,
-      ));
-    }
-
-    return WorkoutLog(
-      id: uuid.v4(),
-      userId: userId,
-      date: date,
-      exercises: exerciseLogs,
-    );
-  }
-
-  // Update current user's data from WorkoutProvider
-  void updateCurrentUserData(
-    String userId,
-    List<WorkoutLog> workouts,
-    int streak,
-    int winterArcWorkouts,
-  ) {
-    final index = _members.indexWhere((m) => m.user.id == userId);
-    if (index != -1) {
-      _members[index] = GroupMember(
-        user: _members[index].user,
-        workouts: workouts,
-        currentStreak: streak,
-        totalWinterArcWorkouts: winterArcWorkouts,
-        avatarEmoji: _members[index].avatarEmoji,
-      );
+        _isLoading = false;
+        notifyListeners();
+      });
+    } catch (e) {
+      debugPrint('Error loading group data: $e');
+      _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Get group member IDs (MVP: hardcoded, Production: from Firestore)
+  Future<List<String>> _getGroupMemberIds(String groupId, String currentUserId) async {
+    // Try to fetch from Firestore first
+    final memberIds = await _firestoreService.getGroupMembers(groupId);
+    
+    if (memberIds.isNotEmpty) {
+      return memberIds;
+    }
+
+    // For MVP: Return just the current user
+    // You'll manually add other user IDs in Firebase Console
+    return [currentUserId];
+  }
+
+  /// Get avatar emoji for a user (MVP: simple assignment)
+  String _getAvatarEmoji(String userId, String currentUserId) {
+    if (userId == currentUserId) return '💪';
+    
+    // For other users, you can set this in their profile
+    // For MVP, assign based on hash
+    final hash = userId.hashCode % 4;
+    const emojis = ['🔥', '⚡', '🌟', '🏆'];
+    return emojis[hash];
   }
 
   // Refresh group data
   Future<void> refresh(String currentUserId) async {
     await loadMockData(currentUserId);
+  }
+
+  @override
+  void dispose() {
+    _groupWorkoutsSubscription?.cancel();
+    _groupMembersSubscription?.cancel();
+    super.dispose();
   }
 }

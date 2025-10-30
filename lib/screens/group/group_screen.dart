@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:winter_arc/providers/group_provider.dart';
 import 'package:winter_arc/providers/user_provider.dart';
-import 'package:winter_arc/providers/workout_provider.dart';
 import 'package:winter_arc/widgets/member_card.dart';
 import 'package:winter_arc/widgets/activity_feed_item.dart';
 import 'package:winter_arc/widgets/leaderboard_card.dart';
@@ -37,18 +36,9 @@ class _GroupScreenState extends State<GroupScreen>
   Future<void> _loadGroupData() async {
     final groupProvider = context.read<GroupProvider>();
     final userProvider = context.read<UserProvider>();
-    final workoutProvider = context.read<WorkoutProvider>();
 
-    // Load mock group data
+    // Load real group data from Firebase with real-time sync
     await groupProvider.loadMockData(userProvider.userId);
-
-    // Update current user's real data
-    groupProvider.updateCurrentUserData(
-      userProvider.userId,
-      workoutProvider.allWorkouts,
-      workoutProvider.streak,
-      workoutProvider.totalWinterArcWorkouts,
-    );
   }
 
   @override
