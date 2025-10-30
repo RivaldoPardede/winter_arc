@@ -119,7 +119,7 @@ class LeaderboardCard extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isCurrentUser
-                      ? theme.colorScheme.primaryContainer.withOpacity(0.3)
+                      ? theme.colorScheme.primaryContainer.withValues(alpha:0.3)
                       : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                   border: isCurrentUser

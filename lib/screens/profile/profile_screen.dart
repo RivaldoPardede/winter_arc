@@ -78,7 +78,7 @@ class ProfileScreen extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             theme.colorScheme.primary,
-            theme.colorScheme.primary.withOpacity(0.7),
+            theme.colorScheme.primary.withValues(alpha:0.7),
           ],
         ),
       ),
@@ -99,7 +99,7 @@ class ProfileScreen extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -129,7 +129,7 @@ class ProfileScreen extends StatelessWidget {
               Text(
                 'Member since $memberSince',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                 ),
               ),
             ],
@@ -303,7 +303,7 @@ class ProfileScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha:0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -325,7 +325,7 @@ class ProfileScreen extends StatelessWidget {
                     Text(
                       'Winter Arc begins November 1st, 2025',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+                        color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -347,7 +347,7 @@ class ProfileScreen extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 12,
-                  backgroundColor: Colors.white.withOpacity(0.3),
+                  backgroundColor: Colors.white.withValues(alpha: 0.3),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     theme.colorScheme.primary,
                   ),
@@ -368,7 +368,7 @@ class ProfileScreen extends StatelessWidget {
                   Text(
                     '$daysRemaining days left',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+                      color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -379,7 +379,7 @@ class ProfileScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha:0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -397,7 +397,7 @@ class ProfileScreen extends StatelessWidget {
                         Text(
                           'Days Passed',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+                            color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
                           ),
                         ),
                       ],
@@ -405,7 +405,7 @@ class ProfileScreen extends StatelessWidget {
                     Container(
                       width: 1,
                       height: 40,
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                     ),
                     Column(
                       children: [
@@ -419,7 +419,7 @@ class ProfileScreen extends StatelessWidget {
                         Text(
                           'Workouts',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+                            color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
                           ),
                         ),
                       ],

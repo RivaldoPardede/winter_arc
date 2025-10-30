@@ -108,7 +108,7 @@ class ExerciseProgressCard extends StatelessWidget {
                           width: 1,
                           height: 40,
                           color: theme.colorScheme.onPrimaryContainer
-                              .withOpacity(0.2),
+                              .withValues(alpha:0.2),
                         ),
                         _buildPRStat(
                           context,
@@ -119,7 +119,7 @@ class ExerciseProgressCard extends StatelessWidget {
                           width: 1,
                           height: 40,
                           color: theme.colorScheme.onPrimaryContainer
-                              .withOpacity(0.2),
+                              .withValues(alpha: 0.2),
                         ),
                         _buildPRStat(
                           context,

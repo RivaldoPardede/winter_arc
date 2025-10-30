@@ -4,6 +4,8 @@ class User {
   final String? avatarUrl;
   final String? avatarEmoji;
   final DateTime joinedDate;
+  final int currentStreak;
+  final DateTime? lastStreakUpdate;
 
   User({
     required this.id,
@@ -11,6 +13,8 @@ class User {
     this.avatarUrl,
     this.avatarEmoji,
     required this.joinedDate,
+    this.currentStreak = 0,
+    this.lastStreakUpdate,
   });
 
   Map<String, dynamic> toJson() {
@@ -20,6 +24,8 @@ class User {
       'avatarUrl': avatarUrl,
       'avatarEmoji': avatarEmoji,
       'joinedDate': joinedDate.toIso8601String(),
+      'currentStreak': currentStreak,
+      'lastStreakUpdate': lastStreakUpdate?.toIso8601String(),
     };
   }
 
@@ -30,6 +36,10 @@ class User {
       avatarUrl: json['avatarUrl'] as String?,
       avatarEmoji: json['avatarEmoji'] as String?,
       joinedDate: DateTime.parse(json['joinedDate'] as String),
+      currentStreak: json['currentStreak'] as int? ?? 0,
+      lastStreakUpdate: json['lastStreakUpdate'] != null
+          ? DateTime.parse(json['lastStreakUpdate'] as String)
+          : null,
     );
   }
 
@@ -39,6 +49,8 @@ class User {
     String? avatarUrl,
     String? avatarEmoji,
     DateTime? joinedDate,
+    int? currentStreak,
+    DateTime? lastStreakUpdate,
   }) {
     return User(
       id: id ?? this.id,
@@ -46,6 +58,8 @@ class User {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       avatarEmoji: avatarEmoji ?? this.avatarEmoji,
       joinedDate: joinedDate ?? this.joinedDate,
+      currentStreak: currentStreak ?? this.currentStreak,
+      lastStreakUpdate: lastStreakUpdate ?? this.lastStreakUpdate,
     );
   }
 }
