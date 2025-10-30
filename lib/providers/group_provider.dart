@@ -169,8 +169,8 @@ class GroupProvider extends ChangeNotifier {
           final winterArcWorkouts =
               await _firestoreService.getTotalWorkoutsInWinterArc(user.id);
 
-          // Get avatar emoji (for MVP, assign based on user ID)
-          final avatarEmoji = _getAvatarEmoji(user.id, currentUserId);
+          // Use avatar emoji from user profile, fallback to default
+          final avatarEmoji = user.avatarEmoji ?? '💪';
 
           _members.add(GroupMember(
             user: user,
@@ -203,17 +203,6 @@ class GroupProvider extends ChangeNotifier {
     // For MVP: Return just the current user
     // You'll manually add other user IDs in Firebase Console
     return [currentUserId];
-  }
-
-  /// Get avatar emoji for a user (MVP: simple assignment)
-  String _getAvatarEmoji(String userId, String currentUserId) {
-    if (userId == currentUserId) return '💪';
-    
-    // For other users, you can set this in their profile
-    // For MVP, assign based on hash
-    final hash = userId.hashCode % 4;
-    const emojis = ['🔥', '⚡', '🌟', '🏆'];
-    return emojis[hash];
   }
 
   // Refresh group data
