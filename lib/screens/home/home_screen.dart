@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             Text(
-              'Winter Arc 2024-2025',
+              'Winter Arc 2025-2026',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),

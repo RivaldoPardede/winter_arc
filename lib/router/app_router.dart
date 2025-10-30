@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:winter_arc/screens/auth/login_screen.dart';
 import 'package:winter_arc/screens/auth/welcome_screen.dart';
 import 'package:winter_arc/screens/home/home_screen.dart';
 import 'package:winter_arc/screens/log_workout/log_workout_screen.dart';
 import 'package:winter_arc/screens/progress/progress_screen.dart';
 import 'package:winter_arc/screens/group/group_screen.dart';
+import 'package:winter_arc/screens/profile/profile_screen.dart';
 import 'package:winter_arc/services/auth_service.dart';
 import 'package:winter_arc/providers/user_provider.dart';
 
@@ -57,6 +57,12 @@ class AppRouter {
       GoRoute(
         path: '/welcome',
         builder: (context, state) => const WelcomeScreen(),
+      ),
+
+      // Profile Route (full screen, outside main nav)
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
 
       // Main App Routes (with bottom nav)
@@ -147,61 +153,18 @@ class ScaffoldWithNavBar extends StatelessWidget {
     );
   }
 
-  void _handleLogout(BuildContext context) async {
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      // Use the provider to sign out
-      final userProvider = context.read<UserProvider>();
-      await userProvider.signOut();
-      
-      // Router will automatically redirect to login screen
-      // because of the auth state listener
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Winter Arc'),
         actions: [
-          PopupMenuButton<String>(
+          IconButton(
             icon: const Icon(Icons.account_circle),
-            onSelected: (value) {
-              if (value == 'logout') {
-                _handleLogout(context);
-              }
+            onPressed: () {
+              context.push('/profile');
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 12),
-                    Text('Logout'),
-                  ],
-                ),
-              ),
-            ],
+            tooltip: 'Profile',
           ),
         ],
       ),

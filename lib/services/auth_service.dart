@@ -16,6 +16,9 @@ class AuthService {
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
 
+  // Get current user email
+  String? get currentUserEmail => _auth.currentUser?.email;
+
   // Sign in with email and password
   Future<UserCredential> signInWithEmailAndPassword({
     required String email,
