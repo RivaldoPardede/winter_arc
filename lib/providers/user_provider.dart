@@ -36,6 +36,16 @@ class UserProvider extends ChangeNotifier {
       final userId = _authService.currentUserId!;
       _currentUser = await _firestoreService.getUser(userId);
       
+      // If user exists, ensure they're in the default group
+      if (_currentUser != null) {
+        const defaultGroupId = 'winter-arc-squad-2025';
+        final members = await _firestoreService.getGroupMembers(defaultGroupId);
+        if (!members.contains(userId)) {
+          debugPrint('🔄 Adding existing user to group...');
+          await _firestoreService.addMemberToGroup(defaultGroupId, userId);
+        }
+      }
+      
       // Don't auto-create profile - let welcome screen handle it
       // This allows us to detect first-time users
     } catch (e) {
@@ -57,6 +67,11 @@ class UserProvider extends ChangeNotifier {
       
       // Also set display name in Firebase Auth
       await _authService.updateDisplayName(user.name);
+      
+      // Add user to the default Winter Arc group
+      const defaultGroupId = 'winter-arc-squad-2025';
+      await _firestoreService.addMemberToGroup(defaultGroupId, user.id);
+      debugPrint('✅ Added new user ${user.name} to group $defaultGroupId');
     } catch (e) {
       debugPrint('Error creating user profile: $e');
       rethrow;

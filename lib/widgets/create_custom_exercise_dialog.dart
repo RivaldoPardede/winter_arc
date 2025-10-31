@@ -73,7 +73,7 @@ class _CreateCustomExerciseDialogState extends State<CreateCustomExerciseDialog>
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<ExerciseCategory>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: const InputDecoration(
                   labelText: 'Category',
                   border: OutlineInputBorder(),

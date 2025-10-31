@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class User {
   final String id;
   final String name;
@@ -29,17 +31,41 @@ class User {
     };
   }
 
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) throw ArgumentError('DateTime value cannot be null');
+    
+    // Handle Firestore Timestamp
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    
+    // Handle String (ISO8601)
+    if (value is String) {
+      return DateTime.parse(value);
+    }
+    
+    // If it's already a DateTime
+    if (value is DateTime) {
+      return value;
+    }
+    
+    throw ArgumentError('Unable to parse DateTime from type ${value.runtimeType}');
+  }
+
+  static DateTime? _parseOptionalDateTime(dynamic value) {
+    if (value == null) return null;
+    return _parseDateTime(value);
+  }
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as String,
       name: json['name'] as String,
       avatarUrl: json['avatarUrl'] as String?,
       avatarEmoji: json['avatarEmoji'] as String?,
-      joinedDate: DateTime.parse(json['joinedDate'] as String),
+      joinedDate: _parseDateTime(json['joinedDate']),
       currentStreak: json['currentStreak'] as int? ?? 0,
-      lastStreakUpdate: json['lastStreakUpdate'] != null
-          ? DateTime.parse(json['lastStreakUpdate'] as String)
-          : null,
+      lastStreakUpdate: _parseOptionalDateTime(json['lastStreakUpdate']),
     );
   }
 

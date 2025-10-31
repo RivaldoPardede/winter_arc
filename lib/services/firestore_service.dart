@@ -201,6 +201,55 @@ class FirestoreService {
 
   // ==================== GROUP OPERATIONS ====================
 
+  /// Create or update a group with member IDs
+  Future<void> createOrUpdateGroup(String groupId, List<String> memberIds) async {
+    try {
+      await _groupsCollection.doc(groupId).set({
+        'groupId': groupId,
+        'memberIds': memberIds,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      debugPrint('✅ Group $groupId created/updated with ${memberIds.length} members');
+    } catch (e) {
+      debugPrint('Error creating/updating group: $e');
+      rethrow;
+    }
+  }
+
+  /// Add a member to a group (creates group if it doesn't exist)
+  Future<void> addMemberToGroup(String groupId, String userId) async {
+    try {
+      // Get current members
+      final doc = await _groupsCollection.doc(groupId).get();
+      List<String> memberIds = [];
+      
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        memberIds = List<String>.from(data['memberIds'] ?? []);
+      }
+      
+      // Add user if not already in the list
+      if (!memberIds.contains(userId)) {
+        memberIds.add(userId);
+        
+        // Use set with merge to create doc if it doesn't exist
+        await _groupsCollection.doc(groupId).set({
+          'groupId': groupId,
+          'memberIds': memberIds,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        
+        debugPrint('✅ Added user $userId to group $groupId (total: ${memberIds.length} members)');
+      } else {
+        debugPrint('ℹ️ User $userId already in group $groupId');
+      }
+    } catch (e) {
+      debugPrint('❌ Error adding member to group: $e');
+      rethrow;
+    }
+  }
+
   /// Get all members of a group
   Future<List<String>> getGroupMembers(String groupId) async {
     try {
@@ -301,18 +350,6 @@ class FirestoreService {
       });
     } catch (e) {
       debugPrint('Error creating group: $e');
-      rethrow;
-    }
-  }
-
-  /// Add member to group (for future use)
-  Future<void> addMemberToGroup(String groupId, String userId) async {
-    try {
-      await _groupsCollection.doc(groupId).update({
-        'memberIds': FieldValue.arrayUnion([userId]),
-      });
-    } catch (e) {
-      debugPrint('Error adding member to group: $e');
       rethrow;
     }
   }

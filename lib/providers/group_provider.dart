@@ -142,12 +142,20 @@ class GroupProvider extends ChangeNotifier {
     await _groupMembersSubscription?.cancel();
 
     try {
-      // For MVP: Use hardcoded member IDs (you + 3 friends)
-      // In production: Fetch from groups/{groupId}/memberIds
-      final memberIds = await _getGroupMemberIds(groupId, currentUserId);
+      // Ensure current user is in the group (add if not)
+      final currentMembers = await _firestoreService.getGroupMembers(groupId);
+      if (!currentMembers.contains(currentUserId)) {
+        debugPrint('🔄 Current user not in group, adding them...');
+        await _firestoreService.addMemberToGroup(groupId, currentUserId);
+      }
+      
+      // Get updated member list after potentially adding current user
+      final memberIds = await _firestoreService.getGroupMembers(groupId);
+      debugPrint('👥 Group members: ${memberIds.length} - $memberIds');
 
       // Load member profiles
       final users = await _firestoreService.getUsersByIds(memberIds);
+      debugPrint('✅ Loaded ${users.length} user profiles');
 
       // Subscribe to all members' workouts in real-time
       _groupWorkoutsSubscription = _firestoreService
@@ -189,20 +197,6 @@ class GroupProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  /// Get group member IDs (MVP: hardcoded, Production: from Firestore)
-  Future<List<String>> _getGroupMemberIds(String groupId, String currentUserId) async {
-    // Try to fetch from Firestore first
-    final memberIds = await _firestoreService.getGroupMembers(groupId);
-    
-    if (memberIds.isNotEmpty) {
-      return memberIds;
-    }
-
-    // For MVP: Return just the current user
-    // You'll manually add other user IDs in Firebase Console
-    return [currentUserId];
   }
 
   // Refresh group data
