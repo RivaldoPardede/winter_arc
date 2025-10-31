@@ -244,12 +244,17 @@ class WorkoutProvider extends ChangeNotifier {
         (max, set) => set.reps > max ? set.reps : max,
       );
 
+      // Calculate average reps, avoiding division by zero
+      final avgReps = exerciseData.sets.isEmpty 
+          ? 0 
+          : (totalReps / exerciseData.sets.length).round();
+
       return {
         'date': workout.date,
         'totalReps': totalReps,
         'totalSets': exerciseData.sets.length,
         'maxReps': maxReps,
-        'avgReps': (totalReps / exerciseData.sets.length).round(),
+        'avgReps': avgReps,
       };
     }).toList();
   }
