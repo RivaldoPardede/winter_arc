@@ -81,11 +81,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo/Icon
-                  Icon(
-                    Icons.ac_unit,
-                    size: 80,
-                    color: theme.colorScheme.primary,
+                  // Logo
+                  Image.asset(
+                    'assets/images/winter-arc-logo.png',
+                    height: 120,
+                    width: 120,
                   ),
                   const SizedBox(height: 16),
 
