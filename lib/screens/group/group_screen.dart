@@ -5,6 +5,7 @@ import 'package:winter_arc/providers/user_provider.dart';
 import 'package:winter_arc/widgets/member_card.dart';
 import 'package:winter_arc/widgets/activity_feed_item.dart';
 import 'package:winter_arc/widgets/leaderboard_card.dart';
+import 'package:winter_arc/widgets/skeleton_loader.dart';
 
 class GroupScreen extends StatefulWidget {
   const GroupScreen({super.key});
@@ -54,9 +55,48 @@ class _GroupScreenState extends State<GroupScreen>
     final userProvider = context.watch<UserProvider>();
 
     if (groupProvider.isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+      return Scaffold(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Header Skeleton
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SkeletonLoader(width: 150, height: 24),
+                        const SizedBox(height: 8),
+                        const SkeletonLoader(width: 200, height: 16),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: List.generate(
+                            3,
+                            (_) => const Column(
+                              children: [
+                                SkeletonLoader(width: 40, height: 40),
+                                SizedBox(height: 4),
+                                SkeletonLoader(width: 60, height: 16),
+                                SizedBox(height: 2),
+                                SkeletonLoader(width: 50, height: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Workout Cards Skeletons
+                ...List.generate(3, (_) => const WorkoutCardSkeleton()),
+              ],
+            ),
+          ),
         ),
       );
     }
@@ -125,7 +165,7 @@ class _GroupScreenState extends State<GroupScreen>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.2),
+                        color: Colors.green.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: Colors.green,
@@ -214,7 +254,7 @@ class _GroupScreenState extends State<GroupScreen>
         Text(
           label,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+            color: theme.colorScheme.onPrimaryContainer.withValues(alpha:0.8),
           ),
         ),
       ],
@@ -232,7 +272,7 @@ class _GroupScreenState extends State<GroupScreen>
             Icon(
               Icons.feed_outlined,
               size: 64,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(

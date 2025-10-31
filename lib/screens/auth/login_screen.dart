@@ -50,16 +50,16 @@ class _LoginScreenState extends State<LoginScreen> {
         // Navigation handled by auth state listener in router
       }
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = _authService.getErrorMessage(e);
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
-      });
-    } finally {
       if (mounted) {
         setState(() {
+          _errorMessage = _authService.getErrorMessage(e);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'An unexpected error occurred. Please try again.';
           _isLoading = false;
         });
       }
@@ -81,11 +81,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo/Icon
-                  Icon(
-                    Icons.ac_unit,
-                    size: 80,
-                    color: theme.colorScheme.primary,
+                  // Logo
+                  Image.asset(
+                    'assets/images/winter-arc-logo.png',
+                    height: 120,
+                    width: 120,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.ac_unit,
+                        size: 80,
+                        color: Colors.blue,
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
 

@@ -54,9 +54,26 @@ class FirestoreService {
   Future<void> saveWorkoutLog(WorkoutLog workout) async {
     try {
       await _workoutsCollection.doc(workout.id).set(workout.toJson());
+      
+      // Update user streak after saving workout
+      await _updateUserStreak(workout.userId);
     } catch (e) {
       debugPrint('Error saving workout: $e');
       rethrow;
+    }
+  }
+  
+  /// Update user's cached streak value
+  Future<void> _updateUserStreak(String userId) async {
+    try {
+      final streak = await getWorkoutStreak(userId);
+      await _usersCollection.doc(userId).update({
+        'currentStreak': streak,
+        'lastStreakUpdate': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Error updating user streak: $e');
+      // Don't throw - streak update is not critical
     }
   }
 

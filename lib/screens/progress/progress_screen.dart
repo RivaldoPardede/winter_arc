@@ -109,7 +109,7 @@ class _ProgressScreenState extends State<ProgressScreen>
             Icon(
               Icons.history,
               size: 64,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha:0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -165,7 +165,7 @@ class _ProgressScreenState extends State<ProgressScreen>
             Icon(
               Icons.trending_up,
               size: 64,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -194,7 +194,7 @@ class _ProgressScreenState extends State<ProgressScreen>
         Padding(
           padding: const EdgeInsets.all(16),
           child: DropdownButtonFormField<String>(
-            value: _selectedExercise,
+            initialValue: _selectedExercise,
             decoration: InputDecoration(
               labelText: 'Select Exercise',
               border: OutlineInputBorder(
@@ -274,7 +274,7 @@ class _ProgressScreenState extends State<ProgressScreen>
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.onSurfaceVariant
-                            .withOpacity(0.4),
+                            .withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),

@@ -75,12 +75,42 @@ class AuthService {
     }
   }
 
+  // Change password
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null || user.email == null) {
+        throw Exception('No user logged in');
+      }
+
+      // Re-authenticate user with current password
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      
+      await user.reauthenticateWithCredential(credential);
+      
+      // Update to new password
+      await user.updatePassword(newPassword);
+      
+      debugPrint('Password updated successfully');
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Change password error: ${e.code} - ${e.message}');
+      rethrow;
+    }
+  }
+
   // Get error message from FirebaseAuthException
   String getErrorMessage(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
         return 'No user found with this email.';
       case 'wrong-password':
+      case 'invalid-credential':
         return 'Incorrect password.';
       case 'invalid-email':
         return 'Invalid email address.';
@@ -90,8 +120,12 @@ class AuthService {
         return 'Too many login attempts. Please try again later.';
       case 'network-request-failed':
         return 'Network error. Please check your connection.';
+      case 'weak-password':
+        return 'Password is too weak. Use at least 6 characters.';
+      case 'requires-recent-login':
+        return 'Please log out and log back in to change your password.';
       default:
-        return 'Login failed. Please try again.';
+        return 'An error occurred. Please try again.';
     }
   }
 }

@@ -44,7 +44,4 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase cache and logs
 .firebase/
-firebase-debug.log
-firebase-debug*.log

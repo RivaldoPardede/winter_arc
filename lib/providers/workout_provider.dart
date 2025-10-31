@@ -15,20 +15,20 @@ class WorkoutProvider extends ChangeNotifier {
   StreamSubscription<List<WorkoutLog>>? _workoutsSubscription;
   String? _currentUserId;
 
+  // Cached computed values for performance
+  int _cachedTodayTotalReps = 0;
+  int _cachedTodayTotalSets = 0;
+  final Map<String, Map<String, dynamic>> _cachedPersonalRecords = {};
+
   List<WorkoutLog> get allWorkouts => _allWorkouts;
   List<WorkoutLog> get todayWorkouts => _todayWorkouts;
   int get streak => _streak;
   int get totalWinterArcWorkouts => _totalWinterArcWorkouts;
   bool get isLoading => _isLoading;
 
-  // Calculated stats
-  int get todayTotalReps {
-    return _todayWorkouts.fold<int>(0, (sum, workout) => sum + workout.totalReps);
-  }
-
-  int get todayTotalSets {
-    return _todayWorkouts.fold<int>(0, (sum, workout) => sum + workout.totalSets);
-  }
+  // Calculated stats - now using cached values
+  int get todayTotalReps => _cachedTodayTotalReps;
+  int get todayTotalSets => _cachedTodayTotalSets;
 
   /// Start listening to real-time workout updates
   Future<void> loadWorkouts(String userId) async {
@@ -57,6 +57,9 @@ class WorkoutProvider extends ChangeNotifier {
                 workout.date.month == now.month &&
                 workout.date.day == now.day;
           }).toList();
+
+          // Update cached stats
+          _updateCachedStats();
 
           // Calculate streak and winter arc stats
           _streak = await _firestoreService.getWorkoutStreak(userId);
@@ -132,6 +135,58 @@ class WorkoutProvider extends ChangeNotifier {
     _workoutsSubscription?.cancel();
     super.dispose();
   }
+  
+  /// Update cached computed values for better performance
+  void _updateCachedStats() {
+    // Cache today's totals
+    _cachedTodayTotalReps = _todayWorkouts.fold<int>(
+      0, (sum, workout) => sum + workout.totalReps
+    );
+    _cachedTodayTotalSets = _todayWorkouts.fold<int>(
+      0, (sum, workout) => sum + workout.totalSets
+    );
+    
+    // Update personal records cache
+    _updatePersonalRecordsCache();
+  }
+  
+  /// Update personal records cache incrementally
+  void _updatePersonalRecordsCache() {
+    _cachedPersonalRecords.clear();
+    
+    for (var workout in _allWorkouts) {
+      for (var exercise in workout.exercises) {
+        final exerciseName = exercise.exercise.name;
+        final totalReps = exercise.sets.fold<int>(0, (sum, set) => sum + set.reps);
+        final maxReps = exercise.sets.fold<int>(0, (max, set) => 
+          set.reps > max ? set.reps : max
+        );
+        
+        if (!_cachedPersonalRecords.containsKey(exerciseName)) {
+          _cachedPersonalRecords[exerciseName] = {
+            'maxRepsInSet': maxReps,
+            'maxRepsInWorkout': totalReps,
+            'maxSets': exercise.sets.length,
+            'dateMaxReps': workout.date,
+            'dateMaxWorkout': workout.date,
+          };
+        } else {
+          final current = _cachedPersonalRecords[exerciseName]!;
+          if (maxReps > current['maxRepsInSet']) {
+            current['maxRepsInSet'] = maxReps;
+            current['dateMaxReps'] = workout.date;
+          }
+          if (totalReps > current['maxRepsInWorkout']) {
+            current['maxRepsInWorkout'] = totalReps;
+            current['dateMaxWorkout'] = workout.date;
+          }
+          if (exercise.sets.length > current['maxSets']) {
+            current['maxSets'] = exercise.sets.length;
+          }
+        }
+      }
+    }
+  }
 
   // Get workouts for a specific date range
   List<WorkoutLog> getWorkoutsInRange(DateTime start, DateTime end) {
@@ -199,49 +254,9 @@ class WorkoutProvider extends ChangeNotifier {
     }).toList();
   }
 
-  // Get personal records for each exercise
+  // Get personal records for each exercise - now returns cached value
   Map<String, Map<String, dynamic>> getPersonalRecords() {
-    final records = <String, Map<String, dynamic>>{};
-
-    for (var workout in _allWorkouts) {
-      for (var exercise in workout.exercises) {
-        final exerciseName = exercise.exercise.name;
-        
-        final totalReps = exercise.sets.fold<int>(
-          0,
-          (sum, set) => sum + set.reps,
-        );
-
-        final maxReps = exercise.sets.fold<int>(
-          0,
-          (max, set) => set.reps > max ? set.reps : max,
-        );
-
-        if (!records.containsKey(exerciseName)) {
-          records[exerciseName] = {
-            'maxRepsInSet': maxReps,
-            'maxRepsInWorkout': totalReps,
-            'maxSets': exercise.sets.length,
-            'dateMaxReps': workout.date,
-            'dateMaxWorkout': workout.date,
-          };
-        } else {
-          if (maxReps > records[exerciseName]!['maxRepsInSet']) {
-            records[exerciseName]!['maxRepsInSet'] = maxReps;
-            records[exerciseName]!['dateMaxReps'] = workout.date;
-          }
-          if (totalReps > records[exerciseName]!['maxRepsInWorkout']) {
-            records[exerciseName]!['maxRepsInWorkout'] = totalReps;
-            records[exerciseName]!['dateMaxWorkout'] = workout.date;
-          }
-          if (exercise.sets.length > records[exerciseName]!['maxSets']) {
-            records[exerciseName]!['maxSets'] = exercise.sets.length;
-          }
-        }
-      }
-    }
-
-    return records;
+    return _cachedPersonalRecords;
   }
 
   // Get total volume (sets × reps) for a workout

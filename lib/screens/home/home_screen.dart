@@ -4,6 +4,7 @@ import 'package:winter_arc/utils/constants.dart';
 import 'package:winter_arc/providers/user_provider.dart';
 import 'package:winter_arc/providers/workout_provider.dart';
 import 'package:winter_arc/widgets/stat_card.dart';
+import 'package:winter_arc/widgets/skeleton_loader.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,7 +45,76 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Consumer2<UserProvider, WorkoutProvider>(
             builder: (context, userProvider, workoutProvider, child) {
               if (userProvider.isLoading || workoutProvider.isLoading) {
-                return const Center(child: CircularProgressIndicator());
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      // Winter Arc Timer Skeleton
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            children: [
+                              const SkeletonLoader(width: 200, height: 24),
+                              const SizedBox(height: 12),
+                              const SkeletonLoader(width: 100, height: 48),
+                              const SizedBox(height: 8),
+                              const SkeletonLoader(width: 120, height: 16),
+                              const SizedBox(height: 16),
+                              SkeletonLoader(
+                                width: double.infinity,
+                                height: 8,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Stats Skeletons
+                      const Row(
+                        children: [
+                          Expanded(child: StatCardSkeleton()),
+                          SizedBox(width: 12),
+                          Expanded(child: StatCardSkeleton()),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Row(
+                        children: [
+                          Expanded(child: StatCardSkeleton()),
+                          SizedBox(width: 12),
+                          Expanded(child: StatCardSkeleton()),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // Winter Arc Progress Skeleton
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SkeletonLoader(width: 150, height: 16),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const SkeletonLoader(width: 120, height: 16),
+                                  SkeletonLoader(
+                                    width: 60,
+                                    height: 32,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
               }
 
               return SingleChildScrollView(
