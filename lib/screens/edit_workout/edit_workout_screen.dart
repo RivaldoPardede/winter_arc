@@ -2,30 +2,30 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
 import 'package:winter_arc/models/exercise.dart';
 import 'package:winter_arc/models/workout_log.dart';
-import 'package:winter_arc/models/workout_set.dart';
-import 'package:winter_arc/models/workout_template.dart';
 import 'package:winter_arc/providers/user_provider.dart';
 import 'package:winter_arc/providers/workout_provider.dart';
 import 'package:winter_arc/services/custom_exercise_service.dart';
-import 'package:winter_arc/services/template_service.dart';
-import 'package:winter_arc/screens/templates/templates_screen.dart';
 import 'package:winter_arc/widgets/exercise_selector.dart';
 import 'package:winter_arc/widgets/add_set_dialog.dart';
 import 'package:winter_arc/widgets/exercise_card.dart';
 
-class LogWorkoutScreen extends StatefulWidget {
-  const LogWorkoutScreen({super.key});
+class EditWorkoutScreen extends StatefulWidget {
+  final WorkoutLog workout;
+
+  const EditWorkoutScreen({
+    super.key,
+    required this.workout,
+  });
 
   @override
-  State<LogWorkoutScreen> createState() => _LogWorkoutScreenState();
+  State<EditWorkoutScreen> createState() => _EditWorkoutScreenState();
 }
 
-class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
-  final List<ExerciseLog> _exerciseLogs = [];
-  final _notesController = TextEditingController();
+class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
+  late List<ExerciseLog> _exerciseLogs;
+  late TextEditingController _notesController;
   final _customExerciseService = CustomExerciseService();
   bool _isSaving = false;
   List<Exercise> _allExercises = Exercise.defaultExercises;
@@ -33,6 +33,14 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
   @override
   void initState() {
     super.initState();
+    // Create a mutable copy of the exercises
+    _exerciseLogs = widget.workout.exercises.map((e) => 
+      ExerciseLog(
+        exercise: e.exercise,
+        sets: List.from(e.sets), // Create mutable copy of sets
+      )
+    ).toList();
+    _notesController = TextEditingController(text: widget.workout.notes ?? '');
     _loadExercises();
   }
 
@@ -57,7 +65,7 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      useRootNavigator: false, // Use local navigator
+      useRootNavigator: false,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -91,7 +99,7 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
   void _addSetToExercise(int exerciseIndex) {
     showDialog(
       context: context,
-      useRootNavigator: false, // Use local navigator
+      useRootNavigator: false,
       builder: (context) => AddSetDialog(
         exerciseName: _exerciseLogs[exerciseIndex].exercise.name,
         onSetAdded: (set) {
@@ -115,127 +123,6 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
     });
   }
 
-  Future<void> _loadFromTemplate() async {
-    final template = await Navigator.of(context).push<WorkoutTemplate>(
-      MaterialPageRoute(
-        builder: (context) => TemplatesScreen(
-          onTemplateSelected: (template) => template,
-        ),
-      ),
-    );
-
-    if (template != null && mounted) {
-      setState(() {
-        _exerciseLogs.clear();
-        for (var exerciseTemplate in template.exercises) {
-          _exerciseLogs.add(
-            ExerciseLog(
-              exercise: exerciseTemplate.exercise,
-              sets: List.generate(
-                exerciseTemplate.numberOfSets,
-                (index) => WorkoutSet(reps: exerciseTemplate.targetReps),
-              ),
-            ),
-          );
-        }
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Loaded template: ${template.name}'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
-
-  Future<void> _saveAsTemplate() async {
-    if (_exerciseLogs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Add exercises before saving as template'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    final nameController = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Save as Template'),
-          content: TextField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: 'Template Name',
-              hintText: 'e.g., Push Day, Leg Day',
-            ),
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed == true && nameController.text.trim().isNotEmpty) {
-      try {
-        final userProvider = context.read<UserProvider>();
-        final templateService = TemplateService();
-
-        final template = WorkoutTemplate(
-          id: const Uuid().v4(),
-          userId: userProvider.userId,
-          name: nameController.text.trim(),
-          exercises: _exerciseLogs.map((log) {
-            return ExerciseTemplate(
-              exercise: log.exercise,
-              numberOfSets: log.sets.length,
-              targetReps: log.sets.isEmpty
-                  ? 10
-                  : (log.sets.fold<int>(0, (sum, set) => sum + set.reps) /
-                          log.sets.length)
-                      .round(),
-            );
-          }).toList(),
-          createdAt: DateTime.now(),
-        );
-
-        await templateService.saveTemplate(template);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Template "${template.name}" saved!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error saving template: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-
-    nameController.dispose();
-  }
-
   Future<void> _saveWorkout() async {
     if (_exerciseLogs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -250,40 +137,34 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final userProvider = context.read<UserProvider>();
       final workoutProvider = context.read<WorkoutProvider>();
 
-      final workout = WorkoutLog(
-        id: const Uuid().v4(),
-        userId: userProvider.userId,
-        date: DateTime.now(),
+      // Create updated workout with same ID and date
+      final updatedWorkout = widget.workout.copyWith(
         exercises: _exerciseLogs,
         notes: _notesController.text.trim().isEmpty 
             ? null 
             : _notesController.text.trim(),
       );
 
-      await workoutProvider.addWorkout(workout);
+      await workoutProvider.updateWorkout(updatedWorkout);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Workout saved! ${workout.totalReps} total reps 💪'),
+            content: Text('Workout updated! ${updatedWorkout.totalReps} total reps 💪'),
             backgroundColor: Colors.green,
           ),
         );
 
-        // Clear the form
-        setState(() {
-          _exerciseLogs.clear();
-          _notesController.clear();
-        });
+        // Go back to previous screen
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving workout: $e'),
+            content: Text('Error updating workout: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -299,21 +180,13 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Log Workout'),
+        title: const Text('Edit Workout'),
         actions: [
-          // Load from template button
           IconButton(
-            icon: const Icon(Icons.bookmark_outline),
-            onPressed: _loadFromTemplate,
-            tooltip: 'Load from template',
+            icon: const Icon(Icons.check),
+            onPressed: _isSaving ? null : _saveWorkout,
+            tooltip: 'Save changes',
           ),
-          // Save as template button
-          if (_exerciseLogs.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.bookmark_add_outlined),
-              onPressed: _saveAsTemplate,
-              tooltip: 'Save as template',
-            ),
         ],
       ),
       body: SafeArea(
@@ -339,23 +212,17 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
           Icon(
             Icons.fitness_center,
             size: 80,
-            color: Theme.of(context).colorScheme.primary.withValues(alpha:0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 24),
           Text(
-            'No Exercises Added',
+            'No Exercises',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8),
           Text(
-            'Tap the button below to start logging',
+            'Add exercises to this workout',
             style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: _loadFromTemplate,
-            icon: const Icon(Icons.bookmark_outline),
-            label: const Text('Or load from template'),
           ),
         ],
       ),
@@ -405,7 +272,7 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
           ),
         ),
 
-        // Notes and save button
+        // Notes and action buttons
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -442,7 +309,7 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     flex: 2,
-                    child: ElevatedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: _isSaving ? null : _saveWorkout,
                       icon: _isSaving
                           ? const SizedBox(
@@ -453,8 +320,8 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.check),
-                      label: Text(_isSaving ? 'Saving...' : 'Save Workout'),
+                          : const Icon(Icons.save),
+                      label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
                     ),
                   ),
                 ],
@@ -471,13 +338,16 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
       children: [
         Text(
           value,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
               ),
         ),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
         ),
       ],
     );

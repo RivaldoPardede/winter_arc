@@ -5,6 +5,7 @@ import 'package:winter_arc/providers/workout_provider.dart';
 import 'package:winter_arc/providers/user_provider.dart';
 import 'package:winter_arc/widgets/workout_history_card.dart';
 import 'package:winter_arc/widgets/exercise_progress_card.dart';
+import 'package:winter_arc/screens/edit_workout/edit_workout_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -323,6 +324,14 @@ class _ProgressScreenState extends State<ProgressScreen>
     );
   }
 
+  void _editWorkout(BuildContext context, dynamic workout) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EditWorkoutScreen(workout: workout),
+      ),
+    );
+  }
+
   void _showWorkoutDetails(BuildContext context, dynamic workout) {
     final theme = Theme.of(context);
     
@@ -356,12 +365,25 @@ class _ProgressScreenState extends State<ProgressScreen>
                     ),
                   ),
 
-                  // Title
-                  Text(
-                    'Workout Details',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  // Title and Edit Button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Workout Details',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () {
+                          Navigator.of(context).pop(); // Close modal
+                          _editWorkout(context, workout);
+                        },
+                        tooltip: 'Edit workout',
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
