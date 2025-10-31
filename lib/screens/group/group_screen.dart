@@ -29,8 +29,11 @@ class _GroupScreenState extends State<GroupScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_initialized) {
-      _loadGroupData();
       _initialized = true;
+      // Schedule the data loading after the current build frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadGroupData();
+      });
     }
   }
 

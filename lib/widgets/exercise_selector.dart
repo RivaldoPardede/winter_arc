@@ -1,18 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:winter_arc/models/exercise.dart';
+import 'package:winter_arc/widgets/create_custom_exercise_dialog.dart';
 
 class ExerciseSelector extends StatelessWidget {
   final Function(Exercise) onExerciseSelected;
+  final List<Exercise> exercises;
+  final Function(Exercise)? onCustomExerciseCreated;
 
   const ExerciseSelector({
     super.key,
     required this.onExerciseSelected,
+    required this.exercises,
+    this.onCustomExerciseCreated,
   });
+
+  void _showCreateExerciseDialog(BuildContext context) async {
+    final exercise = await showDialog<Exercise>(
+      context: context,
+      builder: (context) => const CreateCustomExerciseDialog(),
+    );
+    
+    if (exercise != null && onCustomExerciseCreated != null) {
+      onCustomExerciseCreated!(exercise);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final exercises = Exercise.defaultExercises;
-    
     // Group exercises by category
     final Map<ExerciseCategory, List<Exercise>> exercisesByCategory = {};
     for (final exercise in exercises) {
@@ -51,9 +65,20 @@ class ExerciseSelector extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Select Exercise',
-                    style: Theme.of(context).textTheme.titleLarge,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Select Exercise',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      if (onCustomExerciseCreated != null)
+                        IconButton(
+                          icon: const Icon(Icons.add_circle),
+                          tooltip: 'Create Custom Exercise',
+                          onPressed: () => _showCreateExerciseDialog(context),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -85,9 +110,30 @@ class ExerciseSelector extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     children: categoryExercises.map((exercise) {
+                      final isCustom = exercise.type == ExerciseType.other;
                       return ListTile(
                         contentPadding: const EdgeInsets.only(left: 72, right: 16),
-                        title: Text(exercise.name),
+                        title: Row(
+                          children: [
+                            Expanded(child: Text(exercise.name)),
+                            if (isCustom)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'CUSTOM',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                         subtitle: Text(exercise.description),
                         trailing: const Icon(Icons.add_circle_outline),
                         onTap: () {

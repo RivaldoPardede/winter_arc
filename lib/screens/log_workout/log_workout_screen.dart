@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:winter_arc/models/exercise.dart';
 import 'package:winter_arc/models/workout_log.dart';
 import 'package:winter_arc/providers/user_provider.dart';
 import 'package:winter_arc/providers/workout_provider.dart';
+import 'package:winter_arc/services/custom_exercise_service.dart';
 import 'package:winter_arc/widgets/exercise_selector.dart';
 import 'package:winter_arc/widgets/add_set_dialog.dart';
 import 'package:winter_arc/widgets/exercise_card.dart';
@@ -18,7 +20,26 @@ class LogWorkoutScreen extends StatefulWidget {
 class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
   final List<ExerciseLog> _exerciseLogs = [];
   final _notesController = TextEditingController();
+  final _customExerciseService = CustomExerciseService();
   bool _isSaving = false;
+  List<Exercise> _allExercises = Exercise.defaultExercises;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExercises();
+  }
+
+  void _loadExercises() {
+    final userProvider = context.read<UserProvider>();
+    _customExerciseService.getAllExercisesStream(userProvider.userId).listen((exercises) {
+      if (mounted) {
+        setState(() {
+          _allExercises = exercises;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -35,6 +56,7 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => ExerciseSelector(
+        exercises: _allExercises,
         onExerciseSelected: (exercise) {
           setState(() {
             _exerciseLogs.add(ExerciseLog(
@@ -42,6 +64,19 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
               sets: [],
             ));
           });
+        },
+        onCustomExerciseCreated: (exercise) async {
+          final userProvider = context.read<UserProvider>();
+          await _customExerciseService.addCustomExercise(userProvider.userId, exercise);
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Custom exercise "${exercise.name}" created!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         },
       ),
     );
