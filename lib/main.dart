@@ -11,6 +11,7 @@ import 'package:winter_arc/providers/theme_provider.dart';
 import 'package:winter_arc/router/app_router.dart';
 import 'package:winter_arc/utils/theme.dart';
 import 'package:winter_arc/utils/constants.dart';
+import 'package:winter_arc/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,9 @@ void main() async {
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
+  
+  // Initialize notification service
+  await NotificationService().initialize();
   
   runApp(const WinterArcApp());
 }

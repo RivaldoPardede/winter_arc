@@ -8,6 +8,7 @@ import 'package:winter_arc/providers/theme_provider.dart';
 import 'package:winter_arc/models/user.dart';
 import 'package:winter_arc/utils/constants.dart';
 import 'package:winter_arc/services/auth_service.dart';
+import 'package:winter_arc/screens/settings/notification_settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -492,6 +493,20 @@ class ProfileScreen extends StatelessWidget {
                   subtitle: Text(user.avatarEmoji ?? '💪'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showEmojiPicker(context),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.notifications),
+                  title: const Text('Notifications'),
+                  subtitle: const Text('Manage daily reminders'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationSettingsScreen(),
+                      ),
+                    );
+                  },
                 ),
                 const Divider(height: 1),
                 Consumer<ThemeProvider>(
