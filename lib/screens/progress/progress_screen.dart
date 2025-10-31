@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:winter_arc/providers/workout_provider.dart';
 import 'package:winter_arc/providers/user_provider.dart';
@@ -141,11 +142,55 @@ class _ProgressScreenState extends State<ProgressScreen>
         padding: const EdgeInsets.all(16),
         itemCount: workouts.length,
         itemBuilder: (context, index) {
-          return WorkoutHistoryCard(
-            workout: workouts[index],
-            onTap: () {
-              _showWorkoutDetails(context, workouts[index]);
+          final workout = workouts[index];
+          return Dismissible(
+            key: Key(workout.id),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.error,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              child: const Icon(
+                Icons.delete,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+            confirmDismiss: (direction) async {
+              return await _showDeleteConfirmation(context, workout);
             },
+            onDismissed: (direction) async {
+              final userProvider = context.read<UserProvider>();
+              await workoutProvider.deleteWorkout(
+                workout.id,
+                userProvider.userId,
+              );
+              
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Workout deleted'),
+                    action: SnackBarAction(
+                      label: 'Undo',
+                      onPressed: () {
+                        // Re-add the workout
+                        workoutProvider.addWorkout(workout);
+                      },
+                    ),
+                  ),
+                );
+              }
+            },
+            child: WorkoutHistoryCard(
+              workout: workout,
+              onTap: () {
+                _showWorkoutDetails(context, workout);
+              },
+            ),
           );
         },
       ),
@@ -244,6 +289,37 @@ class _ProgressScreenState extends State<ProgressScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Future<bool?> _showDeleteConfirmation(
+    BuildContext context,
+    dynamic workout,
+  ) async {
+    final theme = Theme.of(context);
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete Workout?'),
+          content: Text(
+            'Are you sure you want to delete this workout from ${DateFormat('MMM dd, yyyy').format(workout.date)}? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
   }
 

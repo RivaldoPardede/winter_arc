@@ -104,6 +104,17 @@ class AuthService {
     }
   }
 
+  // Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      debugPrint('Password reset email sent to $email');
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Password reset error: ${e.code} - ${e.message}');
+      rethrow;
+    }
+  }
+
   // Get error message from FirebaseAuthException
   String getErrorMessage(FirebaseAuthException e) {
     switch (e.code) {
