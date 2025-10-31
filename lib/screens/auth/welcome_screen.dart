@@ -75,6 +75,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     'assets/images/winter-arc-logo.png',
                     height: 120,
                     width: 120,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.ac_unit,
+                        size: 80,
+                        color: Colors.blue,
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 
