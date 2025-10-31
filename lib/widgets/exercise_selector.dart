@@ -12,6 +12,23 @@ class ExerciseSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final exercises = Exercise.defaultExercises;
+    
+    // Group exercises by category
+    final Map<ExerciseCategory, List<Exercise>> exercisesByCategory = {};
+    for (final exercise in exercises) {
+      if (!exercisesByCategory.containsKey(exercise.category)) {
+        exercisesByCategory[exercise.category] = [];
+      }
+      exercisesByCategory[exercise.category]!.add(exercise);
+    }
+    
+    // Order categories: push, pull, legs, core
+    final orderedCategories = [
+      ExerciseCategory.push,
+      ExerciseCategory.pull,
+      ExerciseCategory.legs,
+      ExerciseCategory.core,
+    ];
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -44,24 +61,41 @@ class ExerciseSelector extends StatelessWidget {
             Expanded(
               child: ListView.builder(
                 controller: scrollController,
-                itemCount: exercises.length,
-                itemBuilder: (context, index) {
-                  final exercise = exercises[index];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: Text(
-                        exercise.name[0],
-                        style: const TextStyle(color: Colors.white),
+                itemCount: orderedCategories.length,
+                itemBuilder: (context, categoryIndex) {
+                  final category = orderedCategories[categoryIndex];
+                  final categoryExercises = exercisesByCategory[category] ?? [];
+                  
+                  if (categoryExercises.isEmpty) return const SizedBox.shrink();
+                  
+                  return ExpansionTile(
+                    initiallyExpanded: true,
+                    leading: Text(
+                      category.icon,
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                    title: Text(
+                      category.displayName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    title: Text(exercise.name),
-                    subtitle: Text(exercise.description ?? ''),
-                    trailing: const Icon(Icons.add_circle_outline),
-                    onTap: () {
-                      onExerciseSelected(exercise);
-                      Navigator.pop(context);
-                    },
+                    subtitle: Text(
+                      category.description,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    children: categoryExercises.map((exercise) {
+                      return ListTile(
+                        contentPadding: const EdgeInsets.only(left: 72, right: 16),
+                        title: Text(exercise.name),
+                        subtitle: Text(exercise.description),
+                        trailing: const Icon(Icons.add_circle_outline),
+                        onTap: () {
+                          onExerciseSelected(exercise);
+                          Navigator.pop(context);
+                        },
+                      );
+                    }).toList(),
                   );
                 },
               ),
