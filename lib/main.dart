@@ -6,6 +6,7 @@ import 'package:winter_arc/firebase_options.dart';
 import 'package:winter_arc/providers/user_provider.dart';
 import 'package:winter_arc/providers/workout_provider.dart';
 import 'package:winter_arc/providers/group_provider.dart';
+import 'package:winter_arc/providers/theme_provider.dart';
 import 'package:winter_arc/router/app_router.dart';
 import 'package:winter_arc/utils/theme.dart';
 import 'package:winter_arc/utils/constants.dart';
@@ -32,6 +33,7 @@ class WinterArcApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()..loadUser()),
         ChangeNotifierProxyProvider<UserProvider, WorkoutProvider>(
           create: (_) => WorkoutProvider(),
@@ -44,14 +46,14 @@ class WinterArcApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => GroupProvider()),
       ],
-      child: Consumer<UserProvider>(
-        builder: (context, userProvider, _) {
+      child: Consumer2<UserProvider, ThemeProvider>(
+        builder: (context, userProvider, themeProvider, _) {
           return MaterialApp.router(
             title: AppConstants.appName,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.light,
+            themeMode: themeProvider.themeMode,
             routerConfig: AppRouter.createRouter(userProvider),
           );
         },

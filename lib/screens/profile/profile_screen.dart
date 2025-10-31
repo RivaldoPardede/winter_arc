@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:winter_arc/providers/user_provider.dart';
 import 'package:winter_arc/providers/workout_provider.dart';
+import 'package:winter_arc/providers/theme_provider.dart';
 import 'package:winter_arc/models/user.dart';
 import 'package:winter_arc/utils/constants.dart';
 import 'package:winter_arc/services/auth_service.dart';
@@ -482,6 +483,26 @@ class ProfileScreen extends StatelessWidget {
                   subtitle: Text(user.avatarEmoji ?? '💪'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showEmojiPicker(context),
+                ),
+                const Divider(height: 1),
+                Consumer<ThemeProvider>(
+                  builder: (context, themeProvider, _) {
+                    return SwitchListTile(
+                      secondary: Icon(
+                        themeProvider.isDarkMode 
+                            ? Icons.dark_mode 
+                            : Icons.light_mode,
+                      ),
+                      title: const Text('Dark Mode'),
+                      subtitle: Text(
+                        themeProvider.isDarkMode ? 'On' : 'Off',
+                      ),
+                      value: themeProvider.isDarkMode,
+                      onChanged: (value) {
+                        themeProvider.toggleTheme();
+                      },
+                    );
+                  },
                 ),
               ],
             ),
