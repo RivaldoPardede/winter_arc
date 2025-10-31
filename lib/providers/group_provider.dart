@@ -168,7 +168,8 @@ class GroupProvider extends ChangeNotifier {
         }
 
         // Build group members with their workouts
-        _members.clear();
+        // Collect all member data first before clearing and updating
+        final newMembers = <GroupMember>[];
         for (var user in users) {
           final userWorkouts = workoutsByUser[user.id] ?? [];
           
@@ -180,7 +181,7 @@ class GroupProvider extends ChangeNotifier {
           // Use avatar emoji from user profile, fallback to default
           final avatarEmoji = user.avatarEmoji ?? '💪';
 
-          _members.add(GroupMember(
+          newMembers.add(GroupMember(
             user: user,
             workouts: userWorkouts,
             currentStreak: streak,
@@ -189,6 +190,9 @@ class GroupProvider extends ChangeNotifier {
           ));
         }
 
+        // Only update _members once all data is collected
+        _members.clear();
+        _members.addAll(newMembers);
         _isLoading = false;
         notifyListeners();
       });

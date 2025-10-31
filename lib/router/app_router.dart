@@ -10,6 +10,7 @@ import 'package:winter_arc/screens/group/group_screen.dart';
 import 'package:winter_arc/screens/profile/profile_screen.dart';
 import 'package:winter_arc/services/auth_service.dart';
 import 'package:winter_arc/providers/user_provider.dart';
+import 'package:winter_arc/utils/responsive_layout.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -155,6 +156,125 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+    final theme = Theme.of(context);
+
+    if (isDesktop) {
+      // Desktop: Use sidebar navigation
+      return Scaffold(
+        body: Row(
+          children: [
+            // Sidebar
+            Container(
+              width: 280,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                border: Border(
+                  right: BorderSide(
+                    color: theme.colorScheme.outlineVariant,
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // App branding
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.ac_unit,
+                          size: 32,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Winter Arc',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const Divider(height: 1),
+                  
+                  // Navigation items
+                  _buildNavItem(
+                    context,
+                    icon: Icons.home,
+                    selectedIcon: Icons.home,
+                    label: 'Home',
+                    index: 0,
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.add_circle_outline,
+                    selectedIcon: Icons.add_circle,
+                    label: 'Log Workout',
+                    index: 1,
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.trending_up_outlined,
+                    selectedIcon: Icons.trending_up,
+                    label: 'Progress',
+                    index: 2,
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.group_outlined,
+                    selectedIcon: Icons.group,
+                    label: 'Squad',
+                    index: 3,
+                  ),
+                  
+                  const Divider(height: 1),
+                  
+                  _buildNavItem(
+                    context,
+                    icon: Icons.person_outline,
+                    selectedIcon: Icons.person,
+                    label: 'Profile',
+                    index: -1, // Special case for profile
+                    isProfile: true,
+                  ),
+                  
+                  const Spacer(),
+                  
+                  // Footer
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      '90-Day Winter Arc Challenge',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Main content
+            Expanded(
+              child: CenteredContentContainer(
+                maxWidth: 1400,
+                child: navigationShell,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Mobile/Tablet: Use bottom navigation
     return Scaffold(
       appBar: AppBar(
         title: const Text('Winter Arc'),
@@ -194,6 +314,39 @@ class ScaffoldWithNavBar extends StatelessWidget {
             label: 'Group',
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+    BuildContext context, {
+    required IconData icon,
+    required IconData selectedIcon,
+    required String label,
+    required int index,
+    bool isProfile = false,
+  }) {
+    final theme = Theme.of(context);
+    final isSelected = !isProfile && navigationShell.currentIndex == index;
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: ListTile(
+        selected: isSelected,
+        leading: Icon(isSelected ? selectedIcon : icon),
+        title: Text(label),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        selectedTileColor: theme.colorScheme.primaryContainer,
+        selectedColor: theme.colorScheme.onPrimaryContainer,
+        onTap: () {
+          if (isProfile) {
+            context.push('/profile');
+          } else {
+            _onItemTapped(context, index);
+          }
+        },
       ),
     );
   }
