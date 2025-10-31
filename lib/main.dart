@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:winter_arc/firebase_options.dart';
 import 'package:winter_arc/providers/user_provider.dart';
 import 'package:winter_arc/providers/workout_provider.dart';
@@ -46,18 +47,45 @@ class WinterArcApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => GroupProvider()),
       ],
-      child: Consumer2<UserProvider, ThemeProvider>(
-        builder: (context, userProvider, themeProvider, _) {
-          return MaterialApp.router(
-            title: AppConstants.appName,
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.themeMode,
-            routerConfig: AppRouter.createRouter(userProvider),
-          );
-        },
-      ),
+      child: const _AppRouterWidget(),
+    );
+  }
+}
+
+class _AppRouterWidget extends StatefulWidget {
+  const _AppRouterWidget();
+
+  @override
+  State<_AppRouterWidget> createState() => _AppRouterWidgetState();
+}
+
+class _AppRouterWidgetState extends State<_AppRouterWidget> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    final userProvider = context.read<UserProvider>();
+    _router = AppRouter.createRouter(userProvider);
+  }
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    
+    return MaterialApp.router(
+      title: AppConstants.appName,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeProvider.themeMode,
+      routerConfig: _router,
     );
   }
 }
