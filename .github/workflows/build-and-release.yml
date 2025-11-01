@@ -11,6 +11,10 @@ on:
       - main
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: write
+  deployments: write
+
 jobs:
   # Build Android APK
   build-android:
