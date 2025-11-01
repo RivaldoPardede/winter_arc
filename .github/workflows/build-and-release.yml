@@ -1,0 +1,166 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  # Build Android APK
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.1' # Use your Flutter version
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Decode google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: winter-arc-android
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+  # Build Web
+  build-web:
+    name: Build Web App
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Web
+        run: flutter build web --release --wasm
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: winter-arc-web
+          path: build/web/
+          retention-days: 30
+
+  # Create GitHub Release (only on tags)
+  create-release:
+    name: Create GitHub Release
+    needs: [build-android, build-web]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: winter-arc-android
+          path: ./artifacts/android
+
+      - name: Download Web build
+        uses: actions/download-artifact@v4
+        with:
+          name: winter-arc-web
+          path: ./artifacts/web
+
+      - name: Create Web ZIP
+        run: |
+          cd ./artifacts/web
+          zip -r ../winter-arc-web.zip .
+          cd ../..
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./artifacts/android/app-release.apk
+            ./artifacts/winter-arc-web.zip
+          body: |
+            ## 🎉 Winter Arc Release ${{ github.ref_name }}
+            
+            ### 📱 Android
+            - Download `app-release.apk` and install on your Android device
+            - Requires Android 10 or higher
+            
+            ### 🌐 Web
+            - Download `winter-arc-web.zip` and deploy to Firebase Hosting
+            - Or use Firebase CLI: `firebase deploy --only hosting`
+            
+            ### 🔥 What's New
+            - Squad workout notifications
+            - Real-time Firestore sync
+            - Daily reminder notifications
+            - And more!
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Deploy to Firebase Hosting (only on main branch)
+  deploy-web:
+    name: Deploy Web to Firebase
+    needs: build-web
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Web build
+        uses: actions/download-artifact@v4
+        with:
+          name: winter-arc-web
+          path: build/web
+
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: winter-arc-ea2c3 # Your Firebase project ID
+          channelId: live
+        env:
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
