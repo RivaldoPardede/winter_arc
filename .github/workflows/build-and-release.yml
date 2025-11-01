@@ -111,40 +111,25 @@ jobs:
           name: winter-arc-android
           path: ./artifacts/android
 
-      - name: Download Web build
-        uses: actions/download-artifact@v4
-        with:
-          name: winter-arc-web
-          path: ./artifacts/web
-
-      - name: Create Web ZIP
-        run: |
-          cd ./artifacts/web
-          zip -r ../winter-arc-web.zip .
-          cd ../..
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             ./artifacts/android/app-release.apk
-            ./artifacts/winter-arc-web.zip
           body: |
             ## 🎉 Winter Arc Release ${{ github.ref_name }}
             
-            ### 📱 Android
-            - Download `app-release.apk` and install on your Android device
-            - Requires Android 10 or higher
+            ### 📱 Android App
+            Download `app-release.apk` and install on your Android device (Android 10+)
             
-            ### 🌐 Web
-            - Download `winter-arc-web.zip` and deploy to Firebase Hosting
-            - Or use Firebase CLI: `firebase deploy --only hosting`
+            ### 🌐 Web App
+            Live at: **https://winter-arc-e143c.web.app**
             
             ### 🔥 What's New
-            - Squad workout notifications
-            - Real-time Firestore sync
-            - Daily reminder notifications
-            - And more!
+            - Squad workout notifications - Get notified when your squad members crush workouts!
+            - Real-time Firestore sync - Stay updated instantly
+            - Daily reminder notifications - Never miss a workout
+            - Enhanced performance and bug fixes
           draft: false
           prerelease: false
         env:
