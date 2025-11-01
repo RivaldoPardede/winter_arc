@@ -73,6 +73,9 @@ functions/lib/
 # These are internal development notes and guides
 docs/
 
+# GitHub workflow documentation (internal setup guides)
+.github/*.md
+
 # Keep only the main README
 !README.md
 

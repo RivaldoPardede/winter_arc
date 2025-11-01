@@ -43,6 +43,9 @@ jobs:
         run: |
           echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
 
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses || true
+
       - name: Build APK
         run: flutter build apk --release
 
@@ -160,7 +163,6 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: winter-arc-ea2c3 # Your Firebase project ID
+          projectId: winter-arc-e143c
           channelId: live
-        env:
-          FIREBASE_CLI_EXPERIMENTS: webframeworks
+          target: winter-arc-e143c
