@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -12,12 +13,16 @@ import 'package:winter_arc/router/app_router.dart';
 import 'package:winter_arc/utils/theme.dart';
 import 'package:winter_arc/utils/constants.dart';
 import 'package:winter_arc/services/notification_service.dart';
+import 'package:winter_arc/services/fcm_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Set up background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   
   // Enable offline persistence for better performance and offline support
   FirebaseFirestore.instance.settings = const Settings(

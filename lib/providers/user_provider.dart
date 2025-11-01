@@ -1,14 +1,19 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:winter_arc/models/user.dart';
 import 'package:winter_arc/services/auth_service.dart';
 import 'package:winter_arc/services/firestore_service.dart';
+import 'package:winter_arc/services/fcm_service.dart';
 
 class UserProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
+  final FCMService _fcmService = FCMService();
   
   User? _currentUser;
   bool _isLoading = false;
+  StreamSubscription<List<Map<String, dynamic>>>? _notificationSubscription;
+  final Set<String> _shownNotificationIds = {};
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
@@ -44,6 +49,13 @@ class UserProvider extends ChangeNotifier {
           debugPrint('🔄 Adding existing user to group...');
           await _firestoreService.addMemberToGroup(defaultGroupId, userId);
         }
+        
+        // Initialize FCM for push notifications
+        await _fcmService.initialize(userId);
+        await _fcmService.subscribeToSquadTopic(defaultGroupId);
+        
+        // Listen to squad notifications
+        _listenToSquadNotifications(userId, defaultGroupId);
       }
       
       // Don't auto-create profile - let welcome screen handle it
@@ -54,6 +66,35 @@ class UserProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Listen to squad notifications in real-time
+  void _listenToSquadNotifications(String userId, String groupId) {
+    _notificationSubscription?.cancel();
+    _notificationSubscription = _fcmService
+        .listenToSquadNotifications(userId, groupId)
+        .listen((notifications) {
+      // Show notifications that haven't been shown yet
+      for (final notification in notifications) {
+        final notificationId = notification['id'] as String;
+        final timestamp = notification['timestamp'];
+        
+        // Only show recent notifications (within last 5 minutes)
+        if (timestamp != null) {
+          final notificationTime = timestamp.toDate();
+          final now = DateTime.now();
+          final difference = now.difference(notificationTime);
+          
+          if (difference.inMinutes <= 5 && !_shownNotificationIds.contains(notificationId)) {
+            _shownNotificationIds.add(notificationId);
+            _fcmService.showNotificationFromData(notification);
+            debugPrint('🔔 Showing squad notification: ${notification['userName']} worked out!');
+          }
+        }
+      }
+    });
+    
+    debugPrint('👂 Listening for squad notifications...');
   }
 
   /// Create user profile (called from welcome screen)
@@ -105,10 +146,18 @@ class UserProvider extends ChangeNotifier {
     try {
       await _authService.signOut();
       _currentUser = null;
+      _notificationSubscription?.cancel();
+      _shownNotificationIds.clear();
       notifyListeners();
     } catch (e) {
       debugPrint('Error signing out: $e');
       rethrow;
     }
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
   }
 }

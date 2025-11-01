@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:winter_arc/models/workout_log.dart';
 import 'package:winter_arc/services/firestore_service.dart';
+import 'package:winter_arc/services/fcm_service.dart';
 
 class WorkoutProvider extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
+  final FCMService _fcmService = FCMService();
   
   List<WorkoutLog> _allWorkouts = [];
   List<WorkoutLog> _todayWorkouts = [];
@@ -85,10 +87,51 @@ class WorkoutProvider extends ChangeNotifier {
   Future<void> addWorkout(WorkoutLog workout) async {
     try {
       await _firestoreService.saveWorkoutLog(workout);
+      
+      // Send squad notification
+      await _notifySquadWorkoutCompleted(workout);
+      
       // Real-time listener will automatically update the UI
     } catch (e) {
       debugPrint('Error adding workout: $e');
       rethrow;
+    }
+  }
+
+  /// Notify squad members when workout is completed
+  Future<void> _notifySquadWorkoutCompleted(WorkoutLog workout) async {
+    try {
+      // Get user info for the notification
+      final user = await _firestoreService.getUser(workout.userId);
+      if (user == null) return;
+
+      // Calculate workout summary
+      final totalExercises = workout.exercises.length;
+      final totalSets = workout.exercises.fold<int>(
+        0,
+        (sum, ex) => sum + ex.sets.length,
+      );
+      final totalReps = workout.exercises.fold<int>(
+        0,
+        (sum, ex) => sum + ex.sets.fold<int>(0, (s, set) => s + set.reps),
+      );
+
+      final workoutSummary = '$totalExercises exercises, $totalSets sets, $totalReps reps';
+
+      // Send notification to squad (hardcoded group for now)
+      const defaultGroupId = 'winter-arc-squad-2025';
+      
+      await _fcmService.notifySquadWorkoutCompleted(
+        groupId: defaultGroupId,
+        userId: workout.userId,
+        userName: user.name,
+        workoutSummary: workoutSummary,
+      );
+
+      debugPrint('✅ Squad notification sent for ${user.name}\'s workout');
+    } catch (e) {
+      debugPrint('❌ Error notifying squad: $e');
+      // Don't rethrow - notification failure shouldn't block workout logging
     }
   }
 
