@@ -44,4 +44,68 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# ============================================
+# FIREBASE & SENSITIVE FILES (DO NOT COMMIT!)
+# ============================================
+
+# Firebase cache and hosting artifacts
 .firebase/
+
+# Firebase configuration files with API keys and secrets
+# IMPORTANT: Never commit these files - they contain sensitive credentials!
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# Firebase service account keys (if any)
+**/serviceAccountKey.json
+**/firebase-adminsdk*.json
+
+# Firebase Functions (if we add Cloud Functions later)
+functions/node_modules/
+functions/.env
+functions/lib/
+
+# ============================================
+# DOCUMENTATION (Internal development docs)
+# ============================================
+
+# All markdown files in docs/ directory
+# These are internal development notes and guides
+docs/
+
+# Keep only the main README
+!README.md
+
+# ============================================
+# ENVIRONMENT & SECRET FILES
+# ============================================
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# API keys and secrets
+**/secrets.dart
+**/api_keys.dart
+
+# ============================================
+# BUILD & GENERATED FILES
+# ============================================
+
+# APK and App Bundle files
+*.apk
+*.aab
+*.ipa
+
+# Generated files
+**/generated_plugin_registrant.dart
+**/GeneratedPluginRegistrant.*
+
+# Keystore files (NEVER commit signing keys!)
+*.jks
+*.keystore
+*.p12
+*.key
+upload-keystore.jks
+key.properties

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -36,6 +37,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     try {
       final userProvider = context.read<UserProvider>();
       
+      if (kDebugMode) {
+        print('🔄 Creating user profile for: ${userProvider.userId}');
+      }
+      
       // Create user profile with the chosen name
       final user = User(
         id: userProvider.userId,
@@ -44,16 +49,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       );
 
       await userProvider.createUserProfile(user);
+      
+      if (kDebugMode) {
+        print('✅ User profile created successfully');
+      }
 
       if (mounted) {
         // Navigate to home screen
+        if (kDebugMode) {
+          print('🏠 Navigating to home screen');
+        }
         context.go('/home');
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to create profile: $e';
-        _isLoading = false;
-      });
+      if (kDebugMode) {
+        print('❌ Error creating profile: $e');
+      }
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to create profile: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
