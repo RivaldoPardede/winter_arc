@@ -93,6 +93,8 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
+    debugPrint('📅 Scheduling daily reminder for $hour:${minute.toString().padLeft(2, '0')}');
+    
     const androidDetails = AndroidNotificationDetails(
       'daily_reminder',
       'Daily Reminders',
@@ -100,6 +102,9 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      playSound: true,
+      enableVibration: true,
+      channelShowBadge: true,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -130,24 +135,37 @@ class NotificationService {
 
     debugPrint('📅 Notification will fire at: $scheduledDate');
     debugPrint('🕐 Current time: $now');
+    debugPrint('🌍 Timezone: ${tz.local.name}');
+    debugPrint('⏱️ Minutes until notification: ${scheduledDate.difference(now).inMinutes}');
 
-    await _notifications.zonedSchedule(
-      0, // Notification ID
-      title,
-      body,
-      tzScheduledDate,
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
-    );
+    try {
+      await _notifications.zonedSchedule(
+        0, // Notification ID
+        title,
+        body,
+        tzScheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
+      );
 
-    // Save reminder settings
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('reminder_enabled', true);
-    await prefs.setInt('reminder_hour', hour);
-    await prefs.setInt('reminder_minute', minute);
+      // Save reminder settings
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('reminder_enabled', true);
+      await prefs.setInt('reminder_hour', hour);
+      await prefs.setInt('reminder_minute', minute);
 
-    debugPrint('✅ Daily reminder scheduled for $hour:${minute.toString().padLeft(2, '0')}');
+      debugPrint('✅ Daily reminder scheduled successfully');
+      
+      // Verify pending notifications
+      final pending = await _notifications.pendingNotificationRequests();
+      debugPrint('📋 Total pending notifications: ${pending.length}');
+      for (var notif in pending) {
+        debugPrint('   - ID ${notif.id}: ${notif.title}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error scheduling daily reminder: $e');
+    }
   }
 
   /// Cancel all notifications
@@ -208,6 +226,9 @@ class NotificationService {
 
   /// Schedule a test notification for 1 minute from now
   Future<void> scheduleTestNotification() async {
+    debugPrint('🧪 Starting test notification scheduling...');
+    debugPrint('📅 Current timezone: ${tz.local.name}');
+    
     const androidDetails = AndroidNotificationDetails(
       'test_reminder',
       'Test Reminders',
@@ -215,6 +236,9 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      playSound: true,
+      enableVibration: true,
+      channelShowBadge: true,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -232,17 +256,33 @@ class NotificationService {
     final scheduledDate = now.add(const Duration(minutes: 1));
     final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
 
-    await _notifications.zonedSchedule(
-      999, // Different ID for test
-      '🧪 Test Notification',
-      'If you see this in 1 minute, scheduled notifications work!',
-      tzScheduledDate,
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    );
+    debugPrint('🕐 Now: $now');
+    debugPrint('⏰ Scheduled for: $scheduledDate');
+    debugPrint('🌍 TZ Scheduled: $tzScheduledDate');
+    debugPrint('⏱️ Difference: ${scheduledDate.difference(now).inSeconds} seconds');
 
-    debugPrint('🧪 Test notification scheduled for: $scheduledDate');
-    debugPrint('⏰ Will fire in 1 minute');
+    try {
+      await _notifications.zonedSchedule(
+        999, // Different ID for test
+        '🧪 Test Notification',
+        'If you see this in 1 minute, scheduled notifications work!',
+        tzScheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+      
+      debugPrint('✅ Test notification scheduled successfully');
+      debugPrint('💡 Make sure battery optimization is disabled for Winter Arc!');
+      
+      // Get pending notifications to verify
+      final pending = await _notifications.pendingNotificationRequests();
+      debugPrint('📋 Pending notifications: ${pending.length}');
+      for (var notif in pending) {
+        debugPrint('   - ID ${notif.id}: ${notif.title}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error scheduling test notification: $e');
+    }
   }
 
   /// Motivational messages for Winter Arc
