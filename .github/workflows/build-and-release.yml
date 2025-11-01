@@ -27,6 +27,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Install NDK
+        run: sdkmanager --install "ndk;29.0.13113456"
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -42,9 +51,6 @@ jobs:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
           echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
-
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses || true
 
       - name: Build APK
         run: flutter build apk --release
