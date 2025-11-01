@@ -15,6 +15,9 @@ class FCMService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _initialized = false;
+  
+  // Callback for navigation when notification is tapped
+  void Function(String notificationType, Map<String, dynamic> data)? onNotificationTapped;
 
   /// Initialize FCM service
   Future<void> initialize(String userId) async {
@@ -87,7 +90,33 @@ class FCMService {
       iOS: iosSettings,
     );
 
-    await _localNotifications.initialize(settings);
+    await _localNotifications.initialize(
+      settings,
+      onDidReceiveNotificationResponse: _handleNotificationTap,
+    );
+  }
+
+  /// Handle notification tap from local notifications
+  void _handleNotificationTap(NotificationResponse response) {
+    debugPrint('🔔 Local notification tapped: ${response.payload}');
+    
+    if (response.payload != null) {
+      // Parse payload and navigate
+      try {
+        // Payload format: "notificationId"
+        final notificationId = response.payload!;
+        
+        // Trigger navigation callback
+        if (onNotificationTapped != null) {
+          onNotificationTapped!('workout_completed', {'notificationId': notificationId});
+        }
+        
+        // Mark notification as read
+        markNotificationAsRead(notificationId);
+      } catch (e) {
+        debugPrint('❌ Error handling notification tap: $e');
+      }
+    }
   }
 
   /// Handle foreground messages (when app is open)
@@ -107,8 +136,16 @@ class FCMService {
   /// Handle notification tap (when app is in background)
   void _handleMessageOpenedApp(RemoteMessage message) {
     debugPrint('🔔 Notification tapped: ${message.data}');
-    // TODO: Navigate to specific screen based on message.data
-    // For now, just log it
+    
+    // Extract notification type and data
+    final notificationType = message.data['type'] as String? ?? 'unknown';
+    
+    // Trigger navigation callback
+    if (onNotificationTapped != null) {
+      onNotificationTapped!(notificationType, message.data);
+    } else {
+      debugPrint('⚠️ No navigation callback set for notification tap');
+    }
   }
 
   /// Show local notification

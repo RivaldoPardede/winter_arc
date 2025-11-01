@@ -76,6 +76,22 @@ class _AppRouterWidgetState extends State<_AppRouterWidget> {
     super.initState();
     final userProvider = context.read<UserProvider>();
     _router = AppRouter.createRouter(userProvider);
+    
+    // Set up notification tap handler
+    _setupNotificationHandler();
+  }
+
+  void _setupNotificationHandler() {
+    final fcmService = FCMService();
+    
+    fcmService.onNotificationTapped = (type, data) {
+      debugPrint('🔔 Notification tapped - Type: $type, navigating to group screen');
+      
+      // Navigate to group screen when squad notification is tapped
+      if (type == 'workout_completed') {
+        _router.go('/group');
+      }
+    };
   }
 
   @override
