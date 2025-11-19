@@ -99,7 +99,7 @@ jobs:
     name: Create GitHub Release
     needs: [build-android, build-web]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     
     steps:
       - name: Checkout code
@@ -114,10 +114,12 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'nightly' }}
+          name: ${{ github.ref_type == 'tag' && github.ref_name || 'Nightly Release' }}
           files: |
             ./artifacts/android/app-release.apk
           body: |
-            ## 🎉 Winter Arc Release ${{ github.ref_name }}
+            ## 🎉 Winter Arc Release ${{ github.ref_type == 'tag' && github.ref_name || 'Nightly' }}
             
             ### 📱 Android App
             Download `app-release.apk` and install on your Android device (Android 10+)
@@ -131,7 +133,7 @@ jobs:
             - Daily reminder notifications - Never miss a workout
             - Enhanced performance and bug fixes
           draft: false
-          prerelease: false
+          prerelease: ${{ github.ref_type != 'tag' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
