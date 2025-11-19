@@ -16,7 +16,12 @@ class ExerciseCard extends StatelessWidget {
     required this.onRemove,
     required this.onAddSet,
     required this.onRemoveSet,
+    required this.onDuplicate,
+    required this.onDuplicateSet,
   });
+
+  final VoidCallback onDuplicate;
+  final Function(int) onDuplicateSet;
 
   @override
   Widget build(BuildContext context) {
@@ -43,10 +48,21 @@ class ExerciseCard extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text('${exerciseLog.totalReps} total reps'),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: onRemove,
-              color: Colors.red,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.copy),
+                  onPressed: onDuplicate,
+                  tooltip: 'Duplicate Exercise',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: onRemove,
+                  color: Colors.red,
+                  tooltip: 'Remove Exercise',
+                ),
+              ],
             ),
           ),
 
@@ -61,6 +77,7 @@ class ExerciseCard extends StatelessWidget {
                     set: exerciseLog.sets[setIndex],
                     setNumber: setIndex + 1,
                     onRemove: () => onRemoveSet(setIndex),
+                    onDuplicate: () => onDuplicateSet(setIndex),
                   ),
                 ),
               ),

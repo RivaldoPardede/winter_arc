@@ -78,7 +78,7 @@ class TemplatesScreen extends StatelessWidget {
                 onTap: onTemplateSelected != null
                     ? () {
                         onTemplateSelected!(template);
-                        Navigator.of(context).pop();
+                        Navigator.of(context).pop(template);
                       }
                     : null,
                 onDelete: () async {

@@ -4,6 +4,7 @@ import 'package:winter_arc/models/workout_set.dart';
 class SetRow extends StatelessWidget {
   final WorkoutSet set;
   final int setNumber;
+  final VoidCallback onDuplicate;
   final VoidCallback onRemove;
 
   const SetRow({
@@ -11,6 +12,7 @@ class SetRow extends StatelessWidget {
     required this.set,
     required this.setNumber,
     required this.onRemove,
+    required this.onDuplicate,
   });
 
   @override
@@ -45,9 +47,18 @@ class SetRow extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           IconButton(
+            icon: const Icon(Icons.copy, size: 20),
+            onPressed: onDuplicate,
+            tooltip: 'Duplicate Set',
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
+          ),
+          IconButton(
             icon: const Icon(Icons.close, size: 20),
             onPressed: onRemove,
             color: Colors.grey,
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
           ),
         ],
       ),

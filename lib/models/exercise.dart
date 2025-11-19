@@ -9,6 +9,7 @@ enum ExerciseType {
   muscleUps,
   pistolSquats,
   lSit,
+  cardio,
   other,
 }
 
@@ -18,6 +19,7 @@ enum ExerciseCategory {
   pull,   // Pull-ups, Muscle-ups, Rows
   legs,   // Squats, Lunges, Pistol Squats
   core,   // Plank, L-sits, Leg Raises
+  cardio, // Running, Cycling
 }
 
 // Extension to add helper methods to ExerciseCategory
@@ -32,6 +34,8 @@ extension ExerciseCategoryExtension on ExerciseCategory {
         return 'LEGS';
       case ExerciseCategory.core:
         return 'CORE';
+      case ExerciseCategory.cardio:
+        return 'CARDIO';
     }
   }
 
@@ -45,6 +49,8 @@ extension ExerciseCategoryExtension on ExerciseCategory {
         return '🦵';  // Leg
       case ExerciseCategory.core:
         return '🔥';  // Fire (core burn!)
+      case ExerciseCategory.cardio:
+        return '🏃';  // Runner
     }
   }
 
@@ -58,6 +64,8 @@ extension ExerciseCategoryExtension on ExerciseCategory {
         return 'Lower body';
       case ExerciseCategory.core:
         return 'Core & stability';
+      case ExerciseCategory.cardio:
+        return 'Cardiovascular endurance';
     }
   }
 }
@@ -68,6 +76,7 @@ class Exercise {
   final String name;
   final String description;
   final ExerciseCategory category;
+  final List<String> requiredFields; // 'reps', 'weight', 'duration', 'distance'
 
   const Exercise({
     required this.id,
@@ -75,6 +84,7 @@ class Exercise {
     required this.name,
     required this.description,
     required this.category,
+    this.requiredFields = const ['reps'],
   });
 
   Map<String, dynamic> toJson() {
@@ -84,6 +94,7 @@ class Exercise {
       'name': name,
       'description': description,
       'category': category.toString().split('.').last,
+      'requiredFields': requiredFields,
     };
   }
 
@@ -100,6 +111,7 @@ class Exercise {
         (e) => e.toString().split('.').last == (json['category'] as String?),
         orElse: () => ExerciseCategory.push,
       ),
+      requiredFields: (json['requiredFields'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? ['reps'],
     );
   }
 
@@ -145,6 +157,7 @@ class Exercise {
           name: 'Plank',
           description: 'Core stability hold',
           category: ExerciseCategory.core,
+          requiredFields: ['duration'],
         ),
         Exercise(
           id: 'handstand_pushups',
@@ -168,11 +181,20 @@ class Exercise {
           category: ExerciseCategory.legs,
         ),
         Exercise(
-          id: 'l_sit',
+          id: 'l_sits',
           type: ExerciseType.lSit,
           name: 'L-sits',
           description: 'Core and hip flexor strength',
           category: ExerciseCategory.core,
+          requiredFields: ['duration'],
+        ),
+        Exercise(
+          id: 'jogging',
+          type: ExerciseType.cardio,
+          name: 'Jogging',
+          description: 'Steady state running',
+          category: ExerciseCategory.cardio,
+          requiredFields: ['duration', 'distance'],
         ),
       ];
 }

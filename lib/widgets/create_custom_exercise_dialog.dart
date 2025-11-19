@@ -13,6 +13,12 @@ class _CreateCustomExerciseDialogState extends State<CreateCustomExerciseDialog>
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   ExerciseCategory _selectedCategory = ExerciseCategory.push;
+  
+  // Tracked metrics
+  bool _trackReps = true;
+  bool _trackWeight = true;
+  bool _trackDuration = false;
+  bool _trackDistance = false;
 
   @override
   void dispose() {
@@ -23,12 +29,29 @@ class _CreateCustomExerciseDialogState extends State<CreateCustomExerciseDialog>
 
   void _createExercise() {
     if (_formKey.currentState?.validate() ?? false) {
+      final requiredFields = <String>[];
+      if (_trackReps) requiredFields.add('reps');
+      if (_trackWeight) requiredFields.add('weight');
+      if (_trackDuration) requiredFields.add('duration');
+      if (_trackDistance) requiredFields.add('distance');
+
+      // Ensure at least one metric is tracked
+      if (requiredFields.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select at least one metric to track')),
+        );
+        return;
+      }
+
       final exercise = Exercise(
         id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
-        type: ExerciseType.other,
+        type: _selectedCategory == ExerciseCategory.cardio 
+            ? ExerciseType.cardio 
+            : ExerciseType.other,
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         category: _selectedCategory,
+        requiredFields: requiredFields,
       );
       Navigator.pop(context, exercise);
     }
@@ -89,9 +112,62 @@ class _CreateCustomExerciseDialogState extends State<CreateCustomExerciseDialog>
                   if (value != null) {
                     setState(() {
                       _selectedCategory = value;
+                      // Auto-select appropriate metrics based on category
+                      if (value == ExerciseCategory.cardio) {
+                        _trackReps = false;
+                        _trackWeight = false;
+                        _trackDuration = true;
+                        _trackDistance = true;
+                      } else {
+                        _trackReps = true;
+                        _trackWeight = true;
+                        _trackDuration = false;
+                        _trackDistance = false;
+                      }
                     });
                   }
                 },
+              ),
+              const SizedBox(height: 24),
+              
+              // Metrics Selection
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Tracked Metrics',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                title: const Text('Reps'),
+                value: _trackReps,
+                onChanged: (val) => setState(() => _trackReps = val ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+              CheckboxListTile(
+                title: const Text('Weight'),
+                value: _trackWeight,
+                onChanged: (val) => setState(() => _trackWeight = val ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+              CheckboxListTile(
+                title: const Text('Duration (Time)'),
+                value: _trackDuration,
+                onChanged: (val) => setState(() => _trackDuration = val ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+              CheckboxListTile(
+                title: const Text('Distance'),
+                value: _trackDistance,
+                onChanged: (val) => setState(() => _trackDistance = val ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
               ),
             ],
           ),  // Column

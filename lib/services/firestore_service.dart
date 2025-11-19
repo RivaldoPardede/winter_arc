@@ -353,4 +353,33 @@ class FirestoreService {
       rethrow;
     }
   }
+
+  // ==================== SOCIAL OPERATIONS ====================
+
+  /// Search users by name (simple prefix search)
+  Future<List<User>> searchUsers(String query) async {
+    if (query.trim().isEmpty) return [];
+
+    try {
+      // Note: Firestore doesn't support native full-text search.
+      // This is a simple prefix search.
+      // For better search, use Algolia or similar.
+      final strFrontCode = query.substring(0, query.length - 1);
+      final strEndCode = query.substring(query.length - 1, query.length);
+      final limit = strFrontCode + String.fromCharCode(strEndCode.codeUnitAt(0) + 1);
+
+      final querySnapshot = await _usersCollection
+          .where('name', isGreaterThanOrEqualTo: query)
+          .where('name', isLessThan: limit)
+          .limit(20)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => User.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('Error searching users: $e');
+      return [];
+    }
+  }
 }

@@ -1,98 +1,48 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Winter Arc Color Palette
-  static const Color primaryBlue = Color(0xFF1E3A8A); // Deep winter blue
-  static const Color accentIce = Color(0xFF60A5FA); // Ice blue
-  static const Color darkNavy = Color(0xFF0F172A); // Dark navy
-  static const Color snowWhite = Color(0xFFF8FAFC); // Snow white
-  static const Color steelGray = Color(0xFF475569); // Steel gray
-  static const Color successGreen = Color(0xFF10B981); // Success/Progress
-  static const Color warningOrange = Color(0xFFF59E0B); // Warning
-  static const Color errorRed = Color(0xFFEF4444); // Error
+  // Winter Arc Premium Color Palette
+  static const Color primaryDark = Color(0xFF0A192F); // Deep Midnight Blue
+  static const Color surfaceDark = Color(0xFF112240); // Dark Slate
+  static const Color accentCyan = Color(0xFF64FFDA); // Electric Cyan
+  static const Color accentGold = Color(0xFFFFD700); // Champion Gold
+  static const Color textLight = Color(0xFFE6F1FF); // Lightest Slate
+  static const Color textDim = Color(0xFF8892B0); // Slate
+  static const Color successGreen = Color(0xFF10B981);
+  static const Color errorRed = Color(0xFFEF4444);
 
   static ThemeData get lightTheme {
+    // Keeping light theme simple but aligned, though Dark is preferred
     return ThemeData(
       useMaterial3: true,
       fontFamily: 'Inter',
       colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryBlue,
-        primary: primaryBlue,
-        secondary: accentIce,
-        surface: snowWhite,
+        seedColor: primaryDark,
+        primary: primaryDark,
+        secondary: accentCyan,
+        surface: Colors.white,
         error: errorRed,
         brightness: Brightness.light,
       ),
-      scaffoldBackgroundColor: snowWhite,
+      scaffoldBackgroundColor: Colors.white,
       appBarTheme: const AppBarTheme(
-        backgroundColor: primaryBlue,
-        foregroundColor: snowWhite,
+        backgroundColor: primaryDark,
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
       cardTheme: CardThemeData(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         color: Colors.white,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryBlue,
-          foregroundColor: snowWhite,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: accentIce,
-        foregroundColor: Colors.white,
-      ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Colors.white,
-        selectedItemColor: primaryBlue,
-        unselectedItemColor: steelGray,
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.grey[100],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: primaryBlue, width: 2),
-        ),
-      ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: darkNavy,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: darkNavy,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: darkNavy,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          color: steelGray,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          color: steelGray,
+          backgroundColor: primaryDark,
+          foregroundColor: accentCyan,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
     );
@@ -103,48 +53,98 @@ class AppTheme {
       useMaterial3: true,
       fontFamily: 'Inter',
       colorScheme: ColorScheme.fromSeed(
-        seedColor: accentIce,
-        primary: accentIce,
-        secondary: primaryBlue,
-        surface: darkNavy,
+        seedColor: accentCyan,
+        primary: accentCyan,
+        secondary: accentGold,
+        surface: surfaceDark,
         error: errorRed,
         brightness: Brightness.dark,
       ),
-      scaffoldBackgroundColor: const Color(0xFF0F172A),
+      scaffoldBackgroundColor: primaryDark,
       appBarTheme: const AppBarTheme(
-        backgroundColor: darkNavy,
-        foregroundColor: snowWhite,
+        backgroundColor: primaryDark,
+        foregroundColor: textLight,
         elevation: 0,
         centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: textLight,
+        ),
       ),
       cardTheme: CardThemeData(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        color: const Color(0xFF1E293B),
+        elevation: 8,
+        shadowColor: Colors.black26,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: surfaceDark,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accentIce,
-          foregroundColor: darkNavy,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          backgroundColor: accentCyan,
+          foregroundColor: primaryDark,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          elevation: 4,
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: accentIce,
-        foregroundColor: darkNavy,
+        backgroundColor: accentCyan,
+        foregroundColor: primaryDark,
+        elevation: 6,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF1E293B),
-        selectedItemColor: accentIce,
-        unselectedItemColor: steelGray,
+        backgroundColor: surfaceDark,
+        selectedItemColor: accentCyan,
+        unselectedItemColor: textDim,
         type: BottomNavigationBarType.fixed,
-        elevation: 8,
+        elevation: 10,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF233554), // Slightly lighter than surface
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: accentCyan, width: 2),
+        ),
+        labelStyle: const TextStyle(color: textDim),
+        hintStyle: TextStyle(color: textDim.withValues(alpha: 0.5)),
+      ),
+      textTheme: const TextTheme(
+        headlineLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: textLight,
+          letterSpacing: -0.5,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: textLight,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: textLight,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          color: textDim,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          color: textDim,
+        ),
+      ),
+      iconTheme: const IconThemeData(color: accentCyan),
+      dividerTheme: DividerThemeData(color: textDim.withValues(alpha: 0.2)),
     );
   }
 }

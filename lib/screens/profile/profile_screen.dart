@@ -9,6 +9,7 @@ import 'package:winter_arc/models/user.dart';
 import 'package:winter_arc/utils/constants.dart';
 import 'package:winter_arc/services/auth_service.dart';
 import 'package:winter_arc/screens/settings/notification_settings_screen.dart';
+import 'package:winter_arc/screens/profile/search_user_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -29,6 +30,17 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Profile'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SearchUserScreen(),
+                ),
+              );
+            },
+            tooltip: 'Find Users',
+          ),
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () => _showEditProfileDialog(context, user),
@@ -79,10 +91,15 @@ class ProfileScreen extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.primary.withValues(alpha:0.7),
-          ],
+          colors: theme.brightness == Brightness.dark
+              ? [
+                  theme.colorScheme.surface,
+                  theme.colorScheme.surface.withValues(alpha: 0.8),
+                ]
+              : [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withValues(alpha: 0.8),
+                ],
         ),
       ),
       child: SafeArea(

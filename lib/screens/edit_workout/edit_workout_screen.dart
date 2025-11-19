@@ -101,7 +101,7 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
       context: context,
       useRootNavigator: false,
       builder: (context) => AddSetDialog(
-        exerciseName: _exerciseLogs[exerciseIndex].exercise.name,
+        exercise: _exerciseLogs[exerciseIndex].exercise,
         onSetAdded: (set) {
           setState(() {
             _exerciseLogs[exerciseIndex].sets.add(set);
@@ -120,6 +120,35 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
   void _removeSet(int exerciseIndex, int setIndex) {
     setState(() {
       _exerciseLogs[exerciseIndex].sets.removeAt(setIndex);
+    });
+  }
+
+  void _duplicateExercise(int index) {
+    final originalLog = _exerciseLogs[index];
+    setState(() {
+      _exerciseLogs.insert(
+        index + 1,
+        ExerciseLog(
+          exercise: originalLog.exercise,
+          sets: originalLog.sets.map((s) => s.copyWith()).toList(),
+        ),
+      );
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${originalLog.exercise.name} duplicated!'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  void _duplicateSet(int exerciseIndex, int setIndex) {
+    final originalSet = _exerciseLogs[exerciseIndex].sets[setIndex];
+    setState(() {
+      _exerciseLogs[exerciseIndex].sets.insert(
+        setIndex + 1,
+        originalSet.copyWith(),
+      );
     });
   }
 
@@ -267,6 +296,8 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
                 onRemove: () => _removeExercise(index),
                 onAddSet: () => _addSetToExercise(index),
                 onRemoveSet: (setIndex) => _removeSet(index, setIndex),
+                onDuplicate: () => _duplicateExercise(index),
+                onDuplicateSet: (setIndex) => _duplicateSet(index, setIndex),
               );
             },
           ),
