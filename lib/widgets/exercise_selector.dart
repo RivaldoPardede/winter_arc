@@ -6,12 +6,14 @@ class ExerciseSelector extends StatelessWidget {
   final Function(Exercise) onExerciseSelected;
   final List<Exercise> exercises;
   final Function(Exercise)? onCustomExerciseCreated;
+  final Function(Exercise)? onExerciseDeleted;
 
   const ExerciseSelector({
     super.key,
     required this.onExerciseSelected,
     required this.exercises,
     this.onCustomExerciseCreated,
+    this.onExerciseDeleted,
   });
 
   void _showCreateExerciseDialog(BuildContext context) async {
@@ -42,6 +44,7 @@ class ExerciseSelector extends StatelessWidget {
       ExerciseCategory.pull,
       ExerciseCategory.legs,
       ExerciseCategory.core,
+      ExerciseCategory.cardio,
     ];
 
     return DraggableScrollableSheet(
@@ -110,7 +113,7 @@ class ExerciseSelector extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     children: categoryExercises.map((exercise) {
-                      final isCustom = exercise.type == ExerciseType.other;
+                      final isCustom = exercise.id.startsWith('custom_');
                       return ListTile(
                         contentPadding: const EdgeInsets.only(left: 72, right: 16),
                         title: Row(
@@ -135,7 +138,40 @@ class ExerciseSelector extends StatelessWidget {
                           ],
                         ),
                         subtitle: Text(exercise.description),
-                        trailing: const Icon(Icons.add_circle_outline),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isCustom && onExerciseDeleted != null)
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Delete Exercise'),
+                                      content: Text('Are you sure you want to delete "${exercise.name}"?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, true),
+                                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                          child: const Text('Delete'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  
+                                  if (confirm == true) {
+                                    onExerciseDeleted!(exercise);
+                                  }
+                                },
+                              ),
+                            const Icon(Icons.add_circle_outline),
+                          ],
+                        ),
                         onTap: () {
                           onExerciseSelected(exercise);
                           Navigator.pop(context);

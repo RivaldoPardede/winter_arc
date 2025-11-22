@@ -84,6 +84,18 @@ class _LogWorkoutScreenState extends State<LogWorkoutScreen> {
             );
           }
         },
+        onExerciseDeleted: (exercise) async {
+          final userProvider = context.read<UserProvider>();
+          await _customExerciseService.deleteCustomExercise(userProvider.userId, exercise.id);
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Deleted "${exercise.name}"'),
+              ),
+            );
+          }
+        },
       ),
     );
   }
